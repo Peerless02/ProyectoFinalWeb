@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  javalin-app:
+    build: .
+    ports:
+      - "7070:7070"
+    environment:
+      - MONGO_URL=mongodb+srv://<usuario>:<password>@cluster0.abc.mongodb.net/test?retryWrites=true&w=majority
+      - JWT_SECRET=SecretoSuperSeguroParaElProyectoFinal
+      - PUERTO=7070
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
