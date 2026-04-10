@@ -238,6 +238,37 @@ button:focus {
 	margin-top: 10px;
 }
 
+/*--------------------*/
+/* SURVEYS (FORMULARIOS) */
+/*--------------------*/
+
+.mu-section-pad {
+	padding: 40px 0;
+}
+
+.mu-section-alt {
+	background: #fafafa;
+	border-top: 1px solid #f0f0f0;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.mu-form-preview {
+	display: block;
+	margin-top: 10px;
+	max-width: 220px;
+	border-radius: 8px;
+	border: 1px solid #eee;
+}
+
+.mu-form-avatar {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1px solid #ddd;
+	vertical-align: middle;
+}
+
 
 /* ========= BUTTON =========*/
 
