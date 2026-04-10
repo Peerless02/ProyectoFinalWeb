@@ -2,8 +2,6 @@ package org.CSTI5488.edu.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import org.CSTI5488.edu.model.Usuario;
 import org.CSTI5488.edu.repository.UsuarioRepository;
 import org.mindrot.jbcrypt.BCrypt;
@@ -19,8 +17,7 @@ public class AuthService {
 
     public AuthService() {
         this.usuarioRepository = new UsuarioRepository();
-        String secret = System.getenv("JWT_SECRET");
-        this.jwtSecret = (secret != null && !secret.isEmpty()) ? secret : "default-secret-cambiar-en-produccion";
+        this.jwtSecret = System.getenv("JWT_SECRET");
     }
 
     public String login(String username, String password) {
@@ -42,13 +39,5 @@ public class AuthService {
 
     public String hashPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt());
-    }
-
-    public DecodedJWT verifyToken(String token) {
-        try {
-            return JWT.require(Algorithm.HMAC256(jwtSecret)).build().verify(token);
-        } catch (JWTVerificationException e) {
-            return null;
-        }
     }
 }
