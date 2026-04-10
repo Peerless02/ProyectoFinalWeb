@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${evento != null} ? 'Eventoz : Editar evento' : 'Eventoz : Crear evento'">Eventoz : Evento</title>
+
+    <link rel="shortcut icon" type="image/icon" href="/images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/slick.css" rel="stylesheet">
+    <link id="switcher" href="/assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="/style.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+
+    <meta name="google-maps-api-key" content="">
+  </head>
+
+  <body>
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-event-form" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/index.html">Eventoz</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-event-form">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li><a href="/eventos">Eventos</a></li>
+              <li class="active"><a href="javascript:void(0)" th:text="${evento != null} ? 'Editar' : 'Crear'">Crear</a></li>
+            </ul>
+          </div>
+
+          <ul class="nav navbar-nav mu-menu navbar-right" style="margin-right: 0;">
+            <li><a href="/index.html">Home</a></li>
+            <li th:if="${usuario == null}"><a href="/login">Log in</a></li>
+            <li th:if="${usuario != null}"><a href="/logout">Log out</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top: 120px; padding-bottom: 40px;">
+                <h1 th:text="${evento != null} ? 'EDITAR EVENTO' : 'CREAR EVENTO'">CREAR EVENTO</h1>
+                <p class="mu-event-date-line">Formulario de gestion</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top: 20px;">
+      <section id="mu-event-form">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-title-area">
+                <h2 class="mu-title" th:text="${evento != null} ? 'Editar evento' : 'Crear evento'">Crear evento</h2>
+                <p>Completa los datos del evento.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+              <div class="alert alert-danger" th:if="${errores != null && !errores.isEmpty()}">
+                <strong>Hay errores en el formulario</strong>
+                <ul style="margin-top: 8px;">
+                  <li th:each="e : ${errores.entrySet()}" th:text="${e.key + ': ' + e.value}">error</li>
+                </ul>
+              </div>
+
+              <div class="mu-event-card">
+                <div class="mu-event-body">
+                  <form enctype="multipart/form-data"
+                        th:action="${evento != null} ? @{/eventos/{id}/editar(id=${evento.id})} : @{/eventos/nuevo}"
+                        method="post">
+
+                    <div class="row">
+                      <div class="col-md-8">
+                        <div class="form-group">
+                          <label>Titulo</label>
+                          <input class="form-control" type="text" name="titulo"
+                                 th:value="${dto != null && dto.titulo != null} ? ${dto.titulo} : (${evento != null} ? ${evento.titulo} : '')"
+                                 required>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label>Tipo</label>
+                          <select class="form-control" name="tipo" required>
+                            <option value="">Selecciona...</option>
+                            <option th:each="t : ${tiposEvento}"
+                                    th:value="${t.name()}"
+                                    th:text="${t.name()}"
+                                    th:selected="${(dto != null && dto.tipo != null) ? (dto.tipo == t.name()) : ((evento != null && evento.tipo != null) ? (evento.tipo.name() == t.name()) : false)}">
+                              CHARLA
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>Fecha y hora</label>
+                          <input class="form-control" type="datetime-local" name="fechaHora" step="60"
+                                 th:value="${dto != null && dto.fechaHora != null} ? ${dto.fechaHora} : ''"
+                                 required>
+                          <small class="help-block">Formato: <code>YYYY-MM-DDTHH:mm</code></small>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>Cupo maximo</label>
+                          <input class="form-control" type="number" name="cupoMaximo" min="1" step="1"
+                                 th:value="${dto != null && dto.cupoMaximo != null} ? ${dto.cupoMaximo} : (${evento != null} ? ${evento.cupoMaximo} : 1)"
+                                 required>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Descripcion</label>
+                      <textarea class="form-control" name="descripcion" rows="4"
+                                th:text="${dto != null && dto.descripcion != null} ? ${dto.descripcion} : (${evento != null} ? ${evento.descripcion} : '')"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Lugar</label>
+                      <input class="form-control" type="text" id="lugarSearch" autocomplete="off"
+                             th:value="${dto != null && dto.lugar != null} ? ${dto.lugar} : (${evento != null} ? ${evento.lugar} : '')"
+                             placeholder="Busca y selecciona un lugar..." required>
+                      <input type="hidden" id="lugar" name="lugar"
+                             th:value="${dto != null && dto.lugar != null} ? ${dto.lugar} : (${evento != null} ? ${evento.lugar} : '')">
+                      <input type="hidden" id="lugarLat" name="lugarLat"
+                             th:value="${dto != null && dto.lugarLat != null} ? ${dto.lugarLat} : (${evento != null} ? ${evento.lugarLat} : '')">
+                      <input type="hidden" id="lugarLng" name="lugarLng"
+                             th:value="${dto != null && dto.lugarLng != null} ? ${dto.lugarLng} : (${evento != null} ? ${evento.lugarLng} : '')">
+                      <input type="hidden" id="lugarPlaceId" name="lugarPlaceId"
+                             th:value="${dto != null && dto.lugarPlaceId != null} ? ${dto.lugarPlaceId} : (${evento != null} ? ${evento.lugarPlaceId} : '')">
+                      <small class="help-block">Selecciona una sugerencia para guardar la ubicacion correctamente.</small>
+                    </div>
+
+                    <hr>
+
+                    <div class="form-group">
+                      <label>Foto del evento</label>
+                      <input class="form-control" type="file" name="fotoEvento" accept="image/*" onchange="previsualizarFoto(this, 'evento-foto-preview')">
+                      <div style="margin-top: 10px;" th:if="${evento != null && evento.fotoBase64 != null}">
+                        <img id="evento-foto-preview" th:src="${evento.fotoBase64}" class="mu-event-cover mu-event-cover-sm" alt="Foto del evento">
+                      </div>
+                      <div style="margin-top: 10px;" th:if="${evento == null || evento.fotoBase64 == null}">
+                        <img id="evento-foto-preview" class="mu-event-cover mu-event-cover-sm" style="display:none" alt="Foto del evento">
+                      </div>
+                      <small class="help-block">Si no subes una nueva foto al editar, se mantiene la actual.</small>
+                    </div>
+
+                    <hr>
+
+                    <div class="mu-title-area" style="margin-top: 0;">
+                      <h3 class="mu-title" style="font-size: 22px;">Speakers</h3>
+                    </div>
+
+                    <div id="speakers-container">
+                      <div class="row speaker-row" th:if="${speakers != null}" th:each="s,iter : ${speakers}" style="border: 1px solid #eee; padding: 12px; margin-bottom: 10px; border-radius: 8px;">
+                        <div class="col-md-3">
+                          <div class="form-group">
+                            <label>Nombre</label>
+                            <input class="form-control" type="text" name="speaker_nombre" th:value="${s.nombre}">
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="form-group">
+                            <label>Apellido</label>
+                            <input class="form-control" type="text" name="speaker_apellido" th:value="${s.apellido}">
+                          </div>
+                        </div>
+                        <div class="col-md-2">
+                          <div class="form-group">
+                            <label>Hora</label>
+                            <input class="form-control" type="time" name="speaker_hora" th:value="${s.horaPresentacion}">
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group">
+                            <label>Foto</label>
+                            <input class="form-control" type="file" name="speaker_foto" accept="image/*" onchange="previsualizarFotoSpeaker(this)">
+                            <div style="margin-top: 8px;">
+                              <img th:if="${s.fotoBase64 != null}" th:src="${s.fotoBase64}" class="mu-speaker-avatar-sm" alt="Speaker">
+                              <img th:if="${s.fotoBase64 == null}" class="mu-speaker-avatar-sm" style="display:none" alt="Speaker">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label>Descripcion</label>
+                            <textarea class="form-control" name="speaker_descripcion" rows="2" th:text="${s.descripcion}"></textarea>
+                          </div>
+                        </div>
+                        <div class="col-md-12 text-right">
+                          <button type="button" class="btn btn-danger btn-sm" onclick="eliminarSpeaker(this)">Eliminar</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <template id="speaker-template">
+                      <div class="row speaker-row" style="border: 1px solid #eee; padding: 12px; margin-bottom: 10px; border-radius: 8px;">
+                        <div class="col-md-3">
+                          <div class="form-group">
+                            <label>Nombre</label>
+                            <input class="form-control" type="text" name="speaker_nombre">
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="form-group">
+                            <label>Apellido</label>
+                            <input class="form-control" type="text" name="speaker_apellido">
+                          </div>
+                        </div>
+                        <div class="col-md-2">
+                          <div class="form-group">
+                            <label>Hora</label>
+                            <input class="form-control" type="time" name="speaker_hora">
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group">
+                            <label>Foto</label>
+                            <input class="form-control" type="file" name="speaker_foto" accept="image/*" onchange="previsualizarFotoSpeaker(this)">
+                            <div style="margin-top: 8px;">
+                              <img class="speaker-preview mu-speaker-avatar-sm" style="display:none" alt="Speaker">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label>Descripcion</label>
+                            <textarea class="form-control" name="speaker_descripcion" rows="2"></textarea>
+                          </div>
+                        </div>
+                        <div class="col-md-12 text-right">
+                          <button type="button" class="btn btn-danger btn-sm" onclick="eliminarSpeaker(this)">Eliminar</button>
+                        </div>
+                      </div>
+                    </template>
+
+                    <div style="margin-top: 10px; margin-bottom: 20px;">
+                      <button type="button" class="btn btn-default" onclick="agregarSpeaker()">Agregar speaker</button>
+                    </div>
+
+                    <div class="text-right">
+                      <a class="btn btn-default" href="/eventos"><i class="fa fa-arrow-left"></i> Volver</a>
+                      <button class="btn btn-primary" type="submit"><i class="fa fa-check"></i> Guardar</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="/assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/assets/js/slick.min.js"></script>
+    <script type="text/javascript" src="/assets/js/jquery.countdown.min.js"></script>
+    <script type="text/javascript" src="/assets/js/custom.js"></script>
+
+    <script src="/js/maps-config.js"></script>
+
+    <script>
+      function agregarSpeaker() {
+        var tpl = document.getElementById('speaker-template');
+        if (!tpl) return;
+        var node = tpl.content.cloneNode(true);
+        document.getElementById('speakers-container').appendChild(node);
+      }
+
+      function eliminarSpeaker(btn) {
+        var row = btn.closest('.speaker-row');
+        if (row) row.remove();
+      }
+
+      function previsualizarFoto(input, previewId) {
+        var img = document.getElementById(previewId);
+        if (!img || !input || !input.files || !input.files[0]) return;
+        var file = input.files[0];
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          img.src = e.target.result;
+          img.style.display = '';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function previsualizarFotoSpeaker(input) {
+        var row = input.closest('.speaker-row');
+        if (!row || !input.files || !input.files[0]) return;
+        var img = row.querySelector('img.speaker-preview') || row.querySelector('img');
+        if (!img) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          img.src = e.target.result;
+          img.style.display = '';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+
+      // Google Places Autocomplete para el lugar del evento
+      (function initPlacesLoader() {
+        var input = document.getElementById('lugarSearch');
+        if (!input) return;
+
+        function clearPlace() {
+          document.getElementById('lugar').value = input.value || '';
+          document.getElementById('lugarLat').value = '';
+          document.getElementById('lugarLng').value = '';
+          document.getElementById('lugarPlaceId').value = '';
+        }
+
+        input.addEventListener('input', clearPlace);
+
+        function loadGoogleMaps() {
+          var meta = document.querySelector('meta[name="google-maps-api-key"]');
+          var key = (window.GOOGLE_MAPS_API_KEY && String(window.GOOGLE_MAPS_API_KEY).trim())
+            ? String(window.GOOGLE_MAPS_API_KEY).trim()
+            : ((meta && meta.getAttribute('content')) ? meta.getAttribute('content').trim() : '');
+          if (!key) return;
+
+          var s = document.createElement('script');
+          s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&callback=__initPlaces';
+          s.async = true;
+          s.defer = true;
+          document.head.appendChild(s);
+        }
+
+        window.__initPlaces = function () {
+          if (!window.google || !google.maps || !google.maps.places) return;
+
+          var ac = new google.maps.places.Autocomplete(input, {
+            fields: ['place_id', 'geometry', 'name', 'formatted_address']
+          });
+
+          ac.addListener('place_changed', function () {
+            var place = ac.getPlace();
+            if (!place || !place.place_id || !place.geometry || !place.geometry.location) {
+              clearPlace();
+              return;
+            }
+
+            var addr = place.formatted_address ? place.formatted_address : '';
+            var name = place.name ? place.name : '';
+            var label = name && addr ? (name + ', ' + addr) : (name || addr);
+
+            var lat = place.geometry.location.lat();
+            var lng = place.geometry.location.lng();
+
+            input.value = label;
+            document.getElementById('lugar').value = label;
+            document.getElementById('lugarLat').value = String(lat);
+            document.getElementById('lugarLng').value = String(lng);
+            document.getElementById('lugarPlaceId').value = place.place_id;
+          });
+        };
+
+        loadGoogleMaps();
+      })();
+
+      // Bloquear submit si no se selecciono un lugar valido (cuando Places esta disponible)
+      (function enforcePlaceSelection() {
+        var form = document.querySelector('form');
+        if (!form) return;
+        form.addEventListener('submit', function (e) {
+          var placeIdEl = document.getElementById('lugarPlaceId');
+          var placeId = placeIdEl ? (placeIdEl.value || '').trim() : '';
+          if (!placeId) {
+            e.preventDefault();
+            alert('Selecciona un lugar de las sugerencias.');
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

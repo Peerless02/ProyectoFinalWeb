@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Eventoz : Crear evento</title>
+    <meta name="google-maps-api-key" content="">
+
+    <link rel="shortcut icon" type="image/icon" href="images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/slick.css" rel="stylesheet">
+    <link id="switcher" href="assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+  </head>
+
+  <body>
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-create-event" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">Eventoz</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-create-event">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li><a href="index.html">Home</a></li>
+              <li class="active"><a href="crear-evento.html">Crear evento</a></li>
+            </ul>
+          </div>
+
+          <!-- Always-visible auth link (also visible on mobile without opening the menu) -->
+          <ul class="nav navbar-nav mu-menu navbar-right" style="margin-right: 0;">
+            <li><a href="javascript:void(0)" id="auth-button">Log out</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top: 120px; padding-bottom: 40px;">
+                <h1>CREAR EVENTO</h1>
+                <p class="mu-event-date-line">Formulario de registro</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top: 20px;">
+      <section id="mu-create-event">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-title-area">
+                <h2 class="mu-title">Registrar evento</h2>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+              <div id="page-error" class="alert alert-danger" style="display:none"></div>
+              <div id="page-success" class="alert alert-success" style="display:none"></div>
+
+              <!--
+                Backend esperado (cuando exista):
+                POST /eventos/nuevo
+                Content-Type: application/x-www-form-urlencoded
+              -->
+              <form id="create-event-form" action="/api/eventos" method="post">
+                <div class="row">
+                  <div class="col-sm-8">
+                    <div class="form-group">
+                      <label for="ev-titulo">T&iacute;tulo</label>
+                      <input type="text" class="form-control" id="ev-titulo" name="titulo" maxlength="150" required>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="form-group">
+                      <label for="ev-tipo">Tipo</label>
+                      <select class="form-control" id="ev-tipo" name="tipo" required>
+                        <option value="">Selecciona...</option>
+                        <option value="CHARLA">CHARLA</option>
+                        <option value="TALLER">TALLER</option>
+                        <option value="SEMINARIO">SEMINARIO</option>
+                        <option value="CONGRESO">CONGRESO</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ev-descripcion">Descripci&oacute;n</label>
+                  <textarea class="form-control" id="ev-descripcion" name="descripcion" rows="5" placeholder="(Opcional)"></textarea>
+                </div>
+
+                <div class="row">
+                  <div class="col-sm-6">
+                    <div class="form-group">
+                      <label for="ev-fechaHora">Fecha y hora</label>
+                      <input type="datetime-local" class="form-control" id="ev-fechaHora" name="fechaHora" step="1" required>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="form-group">
+                      <label for="ev-cupoMaximo">Cupo m&aacute;ximo</label>
+                      <input type="number" class="form-control" id="ev-cupoMaximo" name="cupoMaximo" min="1" step="1" required>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ev-lugar-search">Lugar</label>
+                  <input type="text" class="form-control" id="ev-lugar-search" maxlength="150" autocomplete="off" placeholder="Busca y selecciona una sugerencia..." required>
+                  <input type="hidden" id="ev-lugar" name="lugar">
+                  <input type="hidden" id="ev-lugarPlaceId" name="lugarPlaceId">
+                  <input type="hidden" id="ev-lugarLat" name="lugarLat">
+                  <input type="hidden" id="ev-lugarLng" name="lugarLng">
+                </div>
+
+                <div class="form-group" id="map-wrap" style="display:none">
+                  <div id="ev-map" style="height: 260px; border: 1px solid #e5e5e5; border-radius: 6px;"></div>
+                </div>
+
+                <div class="row" style="margin-top: 15px;">
+                  <div class="col-sm-6">
+                    <a class="btn btn-default" href="index.html"><i class="fa fa-arrow-left"></i> Volver</a>
+                  </div>
+                  <div class="col-sm-6 text-right">
+                    <button type="submit" class="btn btn-primary" id="btn-submit">
+                      <i class="fa fa-check"></i> Guardar
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/slick.min.js"></script>
+    <script type="text/javascript" src="assets/js/jquery.countdown.min.js"></script>
+    <script type="text/javascript" src="assets/js/custom.js"></script>
+    <script type="text/javascript" src="js/maps-config.js"></script>
+
+    <script type="text/javascript">
+      (function () {
+        var authButton = document.getElementById('auth-button');
+        var form = document.getElementById('create-event-form');
+        var btnSubmit = document.getElementById('btn-submit');
+        var pageError = document.getElementById('page-error');
+        var pageSuccess = document.getElementById('page-success');
+
+        function showError(msg) {
+          pageSuccess.style.display = 'none';
+          pageError.textContent = msg || 'Error';
+          pageError.style.display = 'block';
+        }
+
+        function showSuccess(msg) {
+          pageError.style.display = 'none';
+          pageSuccess.textContent = msg || 'OK';
+          pageSuccess.style.display = 'block';
+        }
+
+        function clearMessages() {
+          pageError.textContent = '';
+          pageError.style.display = 'none';
+          pageSuccess.textContent = '';
+          pageSuccess.style.display = 'none';
+        }
+
+        function ensureOrganizerOrAdmin() {
+          return fetch('/api/session', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var ok = !!(data && data.loggedIn && data.user && (data.user.rol === 'ADMINISTRADOR' || data.user.rol === 'ORGANIZADOR'));
+              if (!ok) window.location.href = 'index.html';
+              return ok;
+            })
+            .catch(function () {
+              window.location.href = 'index.html';
+              return false;
+            });
+        }
+
+        authButton.addEventListener('click', function () {
+          fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(function () { window.location.href = 'index.html'; });
+        });
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          clearMessages();
+
+          // Asegura formato ISO_LOCAL_DATE_TIME (con segundos) para el backend.
+          var dt = document.getElementById('ev-fechaHora');
+          if (dt && dt.value && dt.value.length === 16) dt.value = dt.value + ':00';
+
+          var placeId = document.getElementById('ev-lugarPlaceId').value.trim();
+          var lat = document.getElementById('ev-lugarLat').value.trim();
+          var lng = document.getElementById('ev-lugarLng').value.trim();
+          if (!placeId || !lat || !lng) {
+            showError('Selecciona un lugar desde las sugerencias de Google Maps.');
+            return;
+          }
+
+          btnSubmit.disabled = true;
+          btnSubmit.textContent = 'Guardando...';
+
+          var body = new URLSearchParams(new FormData(form));
+
+          fetch(form.getAttribute('action'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+          }).then(function (r) {
+            // Si el backend hace redirect tras crear, navegamos a la URL final.
+            if (r.redirected) {
+              window.location.href = r.url;
+              return;
+            }
+
+            if (r.status === 200 || r.status === 201 || r.status === 204) {
+              showSuccess('Evento registrado.');
+              form.reset();
+              return;
+            }
+
+            // Intentar leer JSON de error, si existe.
+            return r.json().then(function (d) {
+              showError((d && d.error) ? d.error : ('No se pudo registrar el evento. (' + r.status + ')'));
+            }).catch(function () {
+              return r.text().then(function (t) {
+                showError(t && t.trim() ? t : ('No se pudo registrar el evento. (' + r.status + ')'));
+              });
+            });
+          }).catch(function () {
+            showError('No se pudo registrar el evento.');
+          }).finally(function () {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="fa fa-check"></i> Guardar';
+          });
+        });
+
+        function loadGoogleMaps() {
+          var meta = document.querySelector('meta[name=\"google-maps-api-key\"]');
+          var key = (window.GOOGLE_MAPS_API_KEY && String(window.GOOGLE_MAPS_API_KEY).trim())
+            ? String(window.GOOGLE_MAPS_API_KEY).trim()
+            : ((meta && meta.getAttribute('content')) ? meta.getAttribute('content').trim() : '');
+          if (!key) {
+            showError('Falta configurar la API key de Google Maps. Agrega tu key en el meta tag: google-maps-api-key.');
+            return;
+          }
+          var s = document.createElement('script');
+          s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&callback=initPlaces';
+          s.async = true;
+          s.defer = true;
+          document.head.appendChild(s);
+        }
+
+        var gMap, gMarker, gAutocomplete;
+        window.initPlaces = function () {
+          var input = document.getElementById('ev-lugar-search');
+          if (!input || !window.google || !google.maps || !google.maps.places) return;
+
+          input.addEventListener('input', function () {
+            document.getElementById('ev-lugar').value = '';
+            document.getElementById('ev-lugarPlaceId').value = '';
+            document.getElementById('ev-lugarLat').value = '';
+            document.getElementById('ev-lugarLng').value = '';
+            document.getElementById('map-wrap').style.display = 'none';
+          });
+
+          gAutocomplete = new google.maps.places.Autocomplete(input, {
+            fields: ['place_id', 'geometry', 'name', 'formatted_address']
+          });
+
+          gAutocomplete.addListener('place_changed', function () {
+            var place = gAutocomplete.getPlace();
+            if (!place || !place.place_id || !place.geometry || !place.geometry.location) {
+              document.getElementById('ev-lugar').value = '';
+              document.getElementById('ev-lugarPlaceId').value = '';
+              document.getElementById('ev-lugarLat').value = '';
+              document.getElementById('ev-lugarLng').value = '';
+              document.getElementById('map-wrap').style.display = 'none';
+              return;
+            }
+
+            var addr = place.formatted_address ? place.formatted_address : '';
+            var name = place.name ? place.name : '';
+            var label = name && addr ? (name + ', ' + addr) : (name || addr);
+
+            var lat = place.geometry.location.lat();
+            var lng = place.geometry.location.lng();
+
+            document.getElementById('ev-lugar').value = label;
+            document.getElementById('ev-lugarPlaceId').value = place.place_id;
+            document.getElementById('ev-lugarLat').value = String(lat);
+            document.getElementById('ev-lugarLng').value = String(lng);
+
+            // Map preview
+            document.getElementById('map-wrap').style.display = '';
+            if (!gMap) {
+              gMap = new google.maps.Map(document.getElementById('ev-map'), {
+                center: { lat: lat, lng: lng },
+                zoom: 15,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false
+              });
+              gMarker = new google.maps.Marker({ map: gMap });
+            }
+            gMap.setCenter({ lat: lat, lng: lng });
+            gMarker.setPosition({ lat: lat, lng: lng });
+          });
+        };
+
+        ensureOrganizerOrAdmin();
+        loadGoogleMaps();
+      })();
+    </script>
+  </body>
+</html>
