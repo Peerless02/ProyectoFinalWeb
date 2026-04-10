@@ -1,12 +1,17 @@
 package org.CSTI5488.edu;
-import io.javalin.Javalin;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import io.javalin.Javalin;
+import org.CSTI5488.edu.controller.AuthController;
+import org.CSTI5488.edu.service.AuthService;
+
 public class Main {
-    static void main() {
-        var app = Javalin.create(config -> {
-            config.routes.get("/", ctx -> ctx.result("Hello World"));
-        }).start(7000);
+    public static void main(String[] args) {
+        String puerto = System.getenv().getOrDefault("PUERTO", "7000");
+
+        AuthService authService = new AuthService();
+        AuthController authController = new AuthController(authService);
+
+        Javalin app = Javalin.create().start(Integer.parseInt(puerto));
+        authController.registerRoutes(app);
     }
 }

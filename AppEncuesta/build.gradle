@@ -1,9 +1,10 @@
 plugins {
     id 'java'
     id 'application'
+    id 'com.google.protobuf' version '0.9.4'
 }
 
-application{
+application {
     mainClass = "org.CSTI5488.edu.Main"
 }
 
@@ -19,8 +20,50 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    implementation("io.javalin:javalin:7.1.0")
-    implementation("org.slf4j:slf4j-simple:2.0.17")
+    // Servidor web
+    implementation 'io.javalin:javalin:7.1.0'
+    implementation 'org.slf4j:slf4j-simple:2.0.17'
+
+    // Base de datos
+    implementation 'org.mongodb:mongodb-driver-sync:5.1.0'
+
+    // Autenticación JWT
+    implementation 'com.auth0:java-jwt:4.4.0'
+    implementation 'org.mindrot:jbcrypt:0.4'
+
+    // JSON
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+
+    // gRPC
+    implementation 'io.grpc:grpc-netty-shaded:1.64.0'
+    implementation 'io.grpc:grpc-protobuf:1.64.0'
+    implementation 'io.grpc:grpc-stub:1.64.0'
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.25.3'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.64.0'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'build/generated/source/proto/main/grpc'
+            srcDir 'build/generated/source/proto/main/java'
+        }
+    }
 }
 
 test {
