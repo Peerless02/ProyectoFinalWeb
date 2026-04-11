@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+// Especificaciones para generar las clases en Java
+option java_multiple_files = true;
+option java_package = "org.CSTI5488.edu.grpc";
+option java_outer_classname = "EncuestaProto";
+
+package encuesta;
+
+// ---- Servicios ----
+service EncuestaService {
+  rpc CrearFormulario (FormularioRequest) returns (FormularioResponse);
+  rpc ListarFormulariosPorUsuario (UsuarioRequest) returns (ListaFormulariosResponse);
+}
+
+// ---- Mensajes ----
+message FormularioRequest {
+  string nombre = 1;
+  string sector = 2;
+  string nivel_escolar = 3;
+  string usuario_registro = 4;
+  double latitud = 5;
+  double longitud = 6;
+  string foto_base64 = 7;
+}
+
+message FormularioResponse {
+  bool exito = 1;
+  string mensaje = 2;
+}
+
+message ListaFormulariosResponse {
+  repeated FormularioRequest formularios = 1;
+}
+
+message UsuarioRequest {
+  string username = 1;
+}
