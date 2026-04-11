@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${evento != null} ? ${evento.titulo} : 'Evento'">Evento</title>
+
+    <link rel="shortcut icon" type="image/icon" href="/images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/slick.css" rel="stylesheet">
+    <link id="switcher" href="/assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="/style.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+  </head>
+
+  <body>
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-event-detail" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/index.html">Eventoz</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-event-detail">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li class="active"><a href="/eventos">Eventos</a></li>
+            </ul>
+          </div>
+
+          <ul class="nav navbar-nav mu-menu navbar-right" style="margin-right: 0;">
+            <li><a href="/index.html">Home</a></li>
+            <li th:if="${usuario == null}"><a href="/login">Log in</a></li>
+            <li th:if="${usuario != null}"><a href="/logout">Log out</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top: 120px; padding-bottom: 40px;">
+                <h1 th:text="${evento != null} ? ${evento.titulo} : 'EVENTO'">EVENTO</h1>
+                <p class="mu-event-date-line" th:text="${evento != null} ? ${evento.lugar} : ''">Lugar</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top: 20px;">
+      <section id="mu-event-detail">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-event-card">
+                <div th:if="${evento != null && evento.fotoBase64 != null}">
+                  <img th:src="${evento.fotoBase64}" class="mu-event-cover" alt="Foto del evento">
+                </div>
+
+                <div class="mu-event-body">
+                  <div class="row">
+                    <div class="col-md-8">
+                      <h2 class="mu-title" th:text="${evento != null} ? ${evento.titulo} : 'Evento'">Evento</h2>
+                      <p th:if="${evento != null && evento.descripcion != null}" th:text="${evento.descripcion}">Descripcion</p>
+                    </div>
+                    <div class="col-md-4 text-right" style="padding-top: 10px;">
+                      <a class="btn btn-default" href="/eventos"><i class="fa fa-arrow-left"></i> Volver</a>
+                      <a class="btn btn-primary"
+                         th:if="${usuario != null && usuario.rol != null && evento != null && (usuario.rol.name() == 'ADMINISTRADOR' || (usuario.rol.name() == 'ORGANIZADOR' && evento.organizadorId != null && evento.organizadorId == usuario.id))}"
+                         th:href="@{/eventos/{id}/editar(id=${evento.id})}">
+                        <i class="fa fa-pencil"></i> Editar
+                      </a>
+                    </div>
+                  </div>
+
+                  <hr>
+
+                  <div class="row">
+                    <div class="col-md-6">
+                      <p><strong><i class="fa fa-map-marker"></i> Lugar:</strong> <span th:text="${evento.lugar}">-</span></p>
+                      <p th:if="${evento.tipo != null}"><strong>Tipo:</strong> <span th:text="${evento.tipo}">-</span></p>
+                    </div>
+                    <div class="col-md-6">
+                      <p><strong><i class="fa fa-calendar"></i> Fecha y hora:</strong> <span th:text="${evento.fechaHora}">-</span></p>
+                      <p><strong><i class="fa fa-users"></i> Cupos disponibles:</strong> <span th:text="${evento.cuposDisponibles}">-</span></p>
+                    </div>
+                  </div>
+
+                  <div th:if="${speakers != null && !speakers.isEmpty()}">
+                    <hr>
+                    <div class="mu-title-area" style="margin-top: 0;">
+                      <h2 class="mu-title">Speakers</h2>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-4" th:each="s : ${speakers}" style="margin-bottom: 18px;">
+                        <div class="mu-speaker-card">
+                          <div style="display:flex; gap:12px; align-items:center;">
+                            <img th:if="${s.fotoBase64 != null}"
+                                 th:src="${s.fotoBase64}"
+                                 class="mu-speaker-avatar"
+                                 alt="Speaker">
+                            <div>
+                              <div class="mu-speaker-name" th:text="${s.nombreCompleto}">Nombre</div>
+                              <div th:if="${s.horaPresentacion != null}">
+                                <i class="fa fa-clock-o"></i>
+                                <span th:text="${s.horaPresentacion}">10:00</span>
+                              </div>
+                            </div>
+                          </div>
+                          <p class="mu-speaker-desc"
+                             th:if="${s.descripcion != null && !#strings.isEmpty(s.descripcion)}"
+                             th:text="${s.descripcion}">Descripcion</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="/assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/assets/js/slick.min.js"></script>
+    <script type="text/javascript" src="/assets/js/jquery.countdown.min.js"></script>
+    <script type="text/javascript" src="/assets/js/custom.js"></script>
+  </body>
+</html>

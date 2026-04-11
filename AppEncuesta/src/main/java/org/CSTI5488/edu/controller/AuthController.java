@@ -15,7 +15,7 @@ public class AuthController {
     }
 
     public void registerRoutes(Javalin app) {
-        app.post("/api/auth/login", this::login);
+        app.unsafe.routes.post("/api/auth/login", this::login);
     }
 
     private void login(Context ctx) {

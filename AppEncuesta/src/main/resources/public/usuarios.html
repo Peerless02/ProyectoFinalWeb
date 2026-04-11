@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AppEncuesta : Usuarios</title>
+
+    <link rel="shortcut icon" type="image/icon" href="images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/slick.css" rel="stylesheet">
+    <link id="switcher" href="assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+  </head>
+  <body>
+
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-users" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">AppEncuesta</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-users">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li><a href="index.html">Inicio</a></li>
+              <li class="active"><a href="usuarios.html">Usuarios</a></li>
+            </ul>
+          </div>
+
+          <!-- Always-visible auth link (also visible on mobile without opening the menu) -->
+          <ul class="nav navbar-nav mu-menu navbar-right" style="margin-right: 0;">
+            <li><a href="javascript:void(0)" id="auth-button">Log out</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top: 120px; padding-bottom: 40px;">
+                <h1>USUARIOS</h1>
+                <p class="mu-event-date-line">Administracion de cuentas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top: 20px;">
+      <section id="mu-users">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-title-area">
+                <h2 class="mu-title">Lista de usuarios</h2>
+                <p>Busca, filtra por rol, cambia roles y activa/desactiva cuentas.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-bottom: 15px;">
+            <div class="col-sm-5">
+              <div class="form-group">
+                <input type="text" class="form-control" id="user-search" placeholder="Buscar por nombre o usuario/email">
+              </div>
+            </div>
+            <div class="col-sm-3">
+              <div class="form-group">
+                <select class="form-control" id="role-filter">
+                  <option value="">Todos los roles</option>
+                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="ESTUDIANTE">ESTUDIANTE</option>
+                  <option value="ORGANIZADOR">ORGANIZADOR</option>
+                  <option value="__NULL__">SIN ROL</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-sm-4 text-right">
+              <button class="btn btn-success" id="btn-create-user"><i class="fa fa-plus"></i> Crear usuario</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12">
+              <div id="page-error" class="alert alert-danger" style="display:none"></div>
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Usuario/Email</th>
+                      <th>Rol</th>
+                      <th>Estado</th>
+                      <th style="width: 230px;">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody">
+                    <tr><td colspan="6">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal crear usuario -->
+    <div class="modal fade" id="createUserModal" tabindex="-1" role="dialog" aria-labelledby="createUserTitle">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="createUserTitle">Crear usuario</h4>
+          </div>
+          <div class="modal-body">
+            <div id="create-error" class="alert alert-danger" style="display:none"></div>
+            <form id="create-user-form">
+              <div class="form-group">
+                <label for="cu-nombre">Nombre</label>
+                <input type="text" class="form-control" id="cu-nombre" name="nombre" required>
+              </div>
+              <div class="form-group">
+                <label for="cu-email">Usuario/Email</label>
+                <input type="text" class="form-control" id="cu-email" name="email" required>
+              </div>
+              <div class="form-group">
+                <label for="cu-password">Password</label>
+                <input type="password" class="form-control" id="cu-password" name="password" required>
+              </div>
+              <div class="form-group">
+                <label for="cu-confirm">Confirm password</label>
+                <input type="password" class="form-control" id="cu-confirm" name="confirmPassword" required>
+              </div>
+              <div class="form-group">
+                <label for="cu-role">Rol</label>
+                <select class="form-control" id="cu-role" name="rol" required>
+                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="ESTUDIANTE">ESTUDIANTE</option>
+                  <option value="ORGANIZADOR">ORGANIZADOR</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-success btn-block">Crear</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/slick.min.js"></script>
+    <script type="text/javascript" src="assets/js/jquery.countdown.min.js"></script>
+    <script type="text/javascript" src="assets/js/custom.js"></script>
+
+    <script type="text/javascript">
+    (function () {
+      var authButton = document.getElementById('auth-button');
+      var usersTbody = document.getElementById('users-tbody');
+      var pageError = document.getElementById('page-error');
+      var searchInput = document.getElementById('user-search');
+      var roleFilter = document.getElementById('role-filter');
+      var btnCreate = document.getElementById('btn-create-user');
+      var createForm = document.getElementById('create-user-form');
+      var createError = document.getElementById('create-error');
+
+      var allUsers = [];
+
+      function showPageError(msg) {
+        pageError.textContent = msg || 'Error';
+        pageError.style.display = 'block';
+      }
+      function clearPageError() {
+        pageError.textContent = '';
+        pageError.style.display = 'none';
+      }
+
+      function showCreateError(msg) {
+        createError.textContent = msg || 'Error';
+        createError.style.display = 'block';
+      }
+      function clearCreateError() {
+        createError.textContent = '';
+        createError.style.display = 'none';
+      }
+
+      function postForm(url, formDataObj) {
+        var params = new URLSearchParams();
+        Object.keys(formDataObj).forEach(function (k) {
+          if (formDataObj[k] !== undefined && formDataObj[k] !== null) params.append(k, formDataObj[k]);
+        });
+        return fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+      }
+
+      function roleLabel(r) {
+        if (r === null) return 'SIN ROL';
+        return r;
+      }
+
+      function render() {
+        var q = (searchInput.value || '').trim().toLowerCase();
+        var rf = roleFilter.value;
+
+        var filtered = allUsers.filter(function (u) {
+          var hay = (u.nombre + ' ' + u.email).toLowerCase();
+          if (q && hay.indexOf(q) === -1) return false;
+          if (!rf) return true;
+          if (rf === '__NULL__') return u.rol === null;
+          return u.rol === rf;
+        });
+
+        if (!filtered.length) {
+          usersTbody.innerHTML = '<tr><td colspan="6">No hay usuarios para mostrar.</td></tr>';
+          return;
+        }
+
+        usersTbody.innerHTML = filtered.map(function (u) {
+          var disabled = u.esAdmin ? 'disabled' : '';
+          var blocked = u.bloqueado ? 'Bloqueado' : 'Activo';
+          var blockBtnText = u.bloqueado ? 'Activar' : 'Desactivar';
+          var blockBtnClass = u.bloqueado ? 'btn-success' : 'btn-warning';
+
+          var roleOptions = [
+            { v: '', t: 'SIN ROL' },
+            { v: 'ADMINISTRADOR', t: 'ADMINISTRADOR' },
+            { v: 'ESTUDIANTE', t: 'ESTUDIANTE' },
+            { v: 'ORGANIZADOR', t: 'ORGANIZADOR' }
+          ].map(function (opt) {
+            var selected = (opt.v === '' && u.rol === null) || (opt.v !== '' && u.rol === opt.v) ? 'selected' : '';
+            return '<option value="' + opt.v + '" ' + selected + '>' + opt.t + '</option>';
+          }).join('');
+
+          return (
+            '<tr data-id="' + u.id + '">' +
+              '<td>' + u.id + '</td>' +
+              '<td>' + (u.nombre || '') + (u.esAdmin ? ' <span class="label label-primary">SYSTEM</span>' : '') + '</td>' +
+              '<td>' + (u.email || '') + '</td>' +
+              '<td>' +
+                '<select class="form-control input-sm user-role" ' + disabled + '>' + roleOptions + '</select>' +
+              '</td>' +
+              '<td>' + blocked + '</td>' +
+              '<td>' +
+                '<button class="btn btn-sm ' + blockBtnClass + ' user-toggle" ' + disabled + '>' + blockBtnText + '</button> ' +
+                '<span class="text-muted user-msg" style="margin-left:8px;"></span>' +
+              '</td>' +
+            '</tr>'
+          );
+        }).join('');
+      }
+
+      function loadUsers() {
+        clearPageError();
+        usersTbody.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
+        return fetch('/api/admin/users', { credentials: 'same-origin' })
+          .then(function (r) {
+            if (r.status === 401 || r.status === 403) {
+              window.location.href = 'index.html';
+              return;
+            }
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data || !data.users) {
+              showPageError('Respuesta invalida del servidor.');
+              return;
+            }
+            allUsers = data.users;
+            render();
+          })
+          .catch(function () {
+            showPageError('No se pudo cargar la lista de usuarios.');
+          });
+      }
+
+      function ensureAdmin() {
+        return fetch('/api/session', { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data || !data.loggedIn || !data.user || data.user.rol !== 'ADMINISTRADOR') {
+              window.location.href = 'index.html';
+              return false;
+            }
+            return true;
+          })
+          .catch(function () {
+            window.location.href = 'index.html';
+            return false;
+          });
+      }
+
+      authButton.addEventListener('click', function () {
+        fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+          .then(function () { window.location.href = 'index.html'; });
+      });
+
+      searchInput.addEventListener('input', render);
+      roleFilter.addEventListener('change', render);
+
+      btnCreate.addEventListener('click', function () {
+        clearCreateError();
+        createForm.reset();
+        $('#createUserModal').modal('show');
+      });
+
+      createForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearCreateError();
+
+        var nombre = document.getElementById('cu-nombre').value.trim();
+        var email = document.getElementById('cu-email').value.trim();
+        var pass = document.getElementById('cu-password').value;
+        var confirm = document.getElementById('cu-confirm').value;
+        var rol = document.getElementById('cu-role').value;
+
+        if (!nombre || !email || !pass || !confirm || !rol) {
+          showCreateError('Completa todos los campos.');
+          return;
+        }
+        if (pass !== confirm) {
+          showCreateError('Las contrasenas no coinciden.');
+          return;
+        }
+
+        postForm('/api/admin/users', {
+          nombre: nombre,
+          email: email,
+          password: pass,
+          confirmPassword: confirm,
+          rol: rol
+        }).then(function (r) {
+          if (r.status === 201) {
+            $('#createUserModal').modal('hide');
+            return loadUsers();
+          }
+          return r.json().then(function (d) {
+            showCreateError((d && d.error) ? d.error : 'No se pudo crear el usuario.');
+          });
+        }).catch(function () {
+          showCreateError('No se pudo crear el usuario.');
+        });
+      });
+
+      usersTbody.addEventListener('change', function (e) {
+        if (!e.target.classList.contains('user-role')) return;
+        var tr = e.target.closest('tr');
+        var id = tr.getAttribute('data-id');
+        var value = e.target.value;
+        var role = value === '' ? '' : value;
+        var msg = tr.querySelector('.user-msg');
+        msg.textContent = '...';
+
+        postForm('/api/admin/users/' + id + '/role', { rol: role })
+          .then(function (r) {
+            if (r.status === 204) {
+              msg.textContent = 'OK';
+              return loadUsers();
+            }
+            return r.json().then(function (d) {
+              msg.textContent = 'Error';
+              var m = (d && d.error) ? d.error : 'No se pudo cambiar el rol.';
+              if (d && d.detail) m = m + ' (' + d.detail + ')';
+              showPageError(m);
+            });
+          })
+          .catch(function () {
+            msg.textContent = 'Error';
+            showPageError('No se pudo cambiar el rol.');
+          });
+      });
+
+      usersTbody.addEventListener('click', function (e) {
+        if (!e.target.classList.contains('user-toggle')) return;
+        var tr = e.target.closest('tr');
+        var id = tr.getAttribute('data-id');
+        var msg = tr.querySelector('.user-msg');
+        msg.textContent = '...';
+
+        var u = allUsers.find(function (x) { return String(x.id) === String(id); });
+        var nextBlocked = !(u && u.bloqueado);
+
+        postForm('/api/admin/users/' + id + '/blocked', { bloqueado: nextBlocked ? 'true' : 'false' })
+          .then(function (r) {
+            if (r.status === 204) {
+              msg.textContent = 'OK';
+              return loadUsers();
+            }
+            return r.json().then(function (d) {
+              msg.textContent = 'Error';
+              showPageError((d && d.error) ? d.error : 'No se pudo cambiar el estado.');
+            });
+          })
+          .catch(function () {
+            msg.textContent = 'Error';
+            showPageError('No se pudo cambiar el estado.');
+          });
+      });
+
+      // Init
+      ensureAdmin().then(function (ok) {
+        if (ok) loadUsers();
+      });
+    })();
+    </script>
+  </body>
+</html>
