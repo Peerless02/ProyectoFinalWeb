@@ -4,6 +4,7 @@ import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import org.CSTI5488.edu.controller.AuthController;
 import org.CSTI5488.edu.controller.FormularioController;
+import org.CSTI5488.edu.controller.SyncController;
 import org.CSTI5488.edu.db.MongoConfig;
 import org.CSTI5488.edu.service.AuthService;
 import org.CSTI5488.edu.service.FormularioService;
@@ -19,10 +20,15 @@ public class Main {
 
         AuthController authController = new AuthController(authService);
         FormularioController formularioController = new FormularioController(formularioService, authService);
+        SyncController syncController = new SyncController(formularioService, authService);
 
         Javalin app = Javalin.create(config -> {
             // Servir archivos estaticos desde src/main/resources/public
             config.staticFiles.add("/public", Location.CLASSPATH);
+            // Aumentar limite de mensaje WS para soportar fotos en base64 (hasta 2MB)
+            config.jetty.modifyWebSocketServletFactory(wsFactory ->
+                wsFactory.setMaxTextMessageSize(20 * 1024 * 1024)
+            );
         });
 
         // Si MongoDB no esta disponible, el servidor igual debe arrancar y devolver 503 en endpoints que usan la BD.
@@ -46,5 +52,6 @@ public class Main {
 
         authController.registerRoutes(app);
         formularioController.registerRoutes(app);
+        syncController.registerRoutes(app);
     }
 }
