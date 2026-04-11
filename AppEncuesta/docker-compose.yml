@@ -5,10 +5,12 @@ services:
     build: .
     ports:
       - "7070:7070"
+      - "9090:9090"
     environment:
       - MONGO_URL=mongodb+srv://<usuario>:<password>@cluster0.abc.mongodb.net/test?retryWrites=true&w=majority
       - JWT_SECRET=SecretoSuperSeguroParaElProyectoFinal
       - PUERTO=7070
+      - GRPC_PORT=9090
     networks:
       - app-network
 
