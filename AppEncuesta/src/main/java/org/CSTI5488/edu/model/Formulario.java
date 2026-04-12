@@ -2,6 +2,7 @@ package org.CSTI5488.edu.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Map;
 
 public class Formulario implements Serializable {
 
@@ -14,6 +15,10 @@ public class Formulario implements Serializable {
     private Double longitud;
     private String fotoBase64;
     private Date fechaRegistro;
+
+    // Campos adicionales basados en la plantilla (key = campo_uuid).
+    // No afecta la logica de campos fijos; es completamente opcional.
+    private Map<String, Object> camposExtra;
 
     public Formulario() {
     }
@@ -57,4 +62,7 @@ public class Formulario implements Serializable {
 
     public Date getFechaRegistro() { return fechaRegistro; }
     public void setFechaRegistro(Date fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+    public Map<String, Object> getCamposExtra() { return camposExtra; }
+    public void setCamposExtra(Map<String, Object> camposExtra) { this.camposExtra = camposExtra; }
 }

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AppEncuesta : Admin Plantillas</title>
+    <link rel="shortcut icon" type="image/icon" href="images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/slick.css" rel="stylesheet">
+    <link id="switcher" href="assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+  </head>
+  <body>
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-admin" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">AppEncuesta</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-admin">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li><a href="index.html">Inicio</a></li>
+              <li><a href="crear-evento.html">Registrar encuesta</a></li>
+              <li class="active"><a href="admin-plantillas.html">Admin plantillas</a></li>
+            </ul>
+          </div>
+
+          <ul class="nav navbar-nav navbar-right" style="margin-right:0;">
+            <li style="padding: 15px 10px;">
+              <span id="auth-badge" class="label label-default" style="display:none"></span>
+            </li>
+            <li><a href="javascript:void(0)" id="auth-button">Log in</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top: 120px; padding-bottom: 40px;">
+                <h1>ADMIN PLANTILLAS</h1>
+                <p class="mu-event-date-line">Gestion de campos adicionales</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top: 20px;">
+      <section class="mu-section-pad">
+        <div class="container">
+          <div id="auth-gate" class="alert alert-warning" style="display:none">
+            Necesitas iniciar sesion para administrar plantillas.
+          </div>
+
+          <div id="admin-gate" class="alert alert-info" style="display:none">
+            Solo el rol <code>ADMINISTRADOR</code> puede crear o modificar plantillas. Puedes verlas en modo lectura.
+          </div>
+
+          <div class="row">
+            <div class="col-md-12">
+              <div id="page-error" class="alert alert-danger" style="display:none"></div>
+              <div id="page-success" class="alert alert-success" style="display:none"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <strong>Plantillas</strong>
+                </div>
+                <div class="panel-body">
+                  <button type="button" class="btn btn-primary btn-block" id="btn-nueva-plantilla">
+                    <i class="fa fa-plus"></i> Nueva plantilla
+                  </button>
+                  <div style="margin-top:10px;">
+                    <div id="plantillas-list" class="list-group"></div>
+                  </div>
+                </div>
+                <div class="panel-footer">
+                  <button type="button" class="btn btn-default btn-sm" id="btn-marcar-default" disabled>
+                    <i class="fa fa-star"></i> Marcar como default
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm pull-right" id="btn-eliminar-plantilla" disabled>
+                    <i class="fa fa-trash"></i> Eliminar
+                  </button>
+                  <div style="clear:both"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-8">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <strong>Detalle</strong>
+                  <span id="plantilla-badge-default" class="label label-success" style="display:none; margin-left:8px;">DEFAULT</span>
+                </div>
+                <div class="panel-body">
+                  <div id="plantilla-empty" class="text-muted">Selecciona una plantilla.</div>
+
+                  <div id="plantilla-detail" style="display:none;">
+                    <h4 id="plantilla-nombre" style="margin-top:0;"></h4>
+                    <p id="plantilla-descripcion" class="text-muted" style="margin-bottom: 18px;"></p>
+
+                    <h4>Campos fijos</h4>
+                    <div class="row">
+                      <div class="col-sm-6">
+                        <div class="panel panel-default">
+                          <div class="panel-heading"><strong>Nombre</strong></div>
+                          <div class="panel-body text-muted">Campo fijo - no editable</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6">
+                        <div class="panel panel-default">
+                          <div class="panel-heading"><strong>Sector</strong></div>
+                          <div class="panel-body text-muted">Campo fijo - no editable</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6">
+                        <div class="panel panel-default">
+                          <div class="panel-heading"><strong>Nivel Escolar</strong></div>
+                          <div class="panel-body text-muted">Campo fijo - no editable</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6">
+                        <div class="panel panel-default">
+                          <div class="panel-heading"><strong>Foto</strong></div>
+                          <div class="panel-body text-muted">Campo fijo - no editable</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6">
+                        <div class="panel panel-default">
+                          <div class="panel-heading"><strong>Ubicacion GPS</strong></div>
+                          <div class="panel-body text-muted">Campo fijo - no editable</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6">
+                        <div class="panel panel-default">
+                          <div class="panel-heading"><strong>Usuario</strong></div>
+                          <div class="panel-body text-muted">Campo fijo - no editable</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="margin-top:8px;">
+                      <h4 style="display:inline-block; margin-right:10px;">Campos adicionales</h4>
+                      <button type="button" class="btn btn-default btn-sm" id="btn-agregar-campo">
+                        <i class="fa fa-plus"></i> Agregar campo
+                      </button>
+                    </div>
+
+                    <div id="campos-extra-list" style="margin-top: 10px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal: Nueva plantilla -->
+    <div class="modal fade" id="plantillaModal" tabindex="-1" role="dialog" aria-labelledby="plantillaModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="plantillaModalLabel">Nueva plantilla</h4>
+          </div>
+          <div class="modal-body">
+            <div id="plantilla-modal-error" class="alert alert-danger" style="display:none"></div>
+            <form id="plantilla-form">
+              <div class="form-group">
+                <label for="plantilla-nombre-input">Nombre</label>
+                <input type="text" class="form-control" id="plantilla-nombre-input" required>
+              </div>
+              <div class="form-group">
+                <label for="plantilla-desc-input">Descripcion (opcional)</label>
+                <textarea class="form-control" id="plantilla-desc-input" rows="3"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" id="plantilla-guardar">
+                <i class="fa fa-save"></i> Guardar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Agregar/Editar campo -->
+    <div class="modal fade" id="campoModal" tabindex="-1" role="dialog" aria-labelledby="campoModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="campoModalLabel">Agregar campo</h4>
+          </div>
+          <div class="modal-body">
+            <div id="campo-modal-error" class="alert alert-danger" style="display:none"></div>
+            <form id="campo-form">
+              <input type="hidden" id="campo-id">
+              <div class="form-group">
+                <label for="campo-label">Label</label>
+                <input type="text" class="form-control" id="campo-label" required>
+              </div>
+              <div class="form-group">
+                <label for="campo-tipo">Tipo</label>
+                <select class="form-control" id="campo-tipo" required>
+                  <option value="text">text</option>
+                  <option value="number">number</option>
+                  <option value="select">select</option>
+                  <option value="textarea">textarea</option>
+                  <option value="date">date</option>
+                  <option value="checkbox">checkbox</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="campo-opciones-wrap" style="display:none;">
+                <label for="campo-opciones">Opciones (una por linea)</label>
+                <textarea class="form-control" id="campo-opciones" rows="4"></textarea>
+              </div>
+
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" id="campo-requerido"> Requerido
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label for="campo-orden">Orden</label>
+                <input type="number" class="form-control" id="campo-orden" value="1">
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="campo-guardar">
+                <i class="fa fa-save"></i> Guardar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth modal -->
+    <div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="authModalLabel">Iniciar sesion</h4>
+          </div>
+          <div class="modal-body">
+            <div id="auth-error" class="alert alert-danger" style="display:none"></div>
+            <form id="login-form">
+              <div class="form-group">
+                <label for="login-username">Usuario</label>
+                <input type="text" class="form-control" id="login-username" autocomplete="username" required>
+              </div>
+              <div class="form-group">
+                <label for="login-password">Contrasena</label>
+                <input type="password" class="form-control" id="login-password" autocomplete="current-password" required>
+              </div>
+              <button id="login-submit" type="submit" class="btn btn-primary">
+                <i class="fa fa-sign-in"></i> Entrar
+              </button>
+            </form>
+            <p class="text-muted" style="margin-top:10px;">
+              Endpoint: <code>POST /api/auth/login</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vendor -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- App -->
+    <script>
+      (function () {
+        'use strict';
+
+        var LS_AUTH = 'appencuesta.auth';
+
+        var selectedPlantillaId = null;
+        var cachePlantillas = [];
+
+        function $(id) { return document.getElementById(id); }
+        function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+        function setText(el, txt) { if (el) el.textContent = (txt == null) ? '' : String(txt); }
+
+        function b64UrlDecode(s) {
+          var b64 = String(s).replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          var bin = atob(b64);
+          var bytes = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          try { return new TextDecoder('utf-8').decode(bytes); } catch (e) { return bin; }
+        }
+
+        function parseJwt(token) {
+          try {
+            var parts = String(token || '').split('.');
+            if (parts.length < 2) return null;
+            return JSON.parse(b64UrlDecode(parts[1]));
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function nowSeconds() { return Math.floor(Date.now() / 1000); }
+
+        function getAuth() {
+          try {
+            var raw = localStorage.getItem(LS_AUTH);
+            if (!raw) return null;
+            var a = JSON.parse(raw);
+            if (!a || !a.token) return null;
+            var payload = parseJwt(a.token);
+            if (!payload || !payload.sub) return null;
+            if (payload.exp && payload.exp <= nowSeconds()) return null;
+            return { token: a.token, username: payload.sub, rol: payload.rol || payload.role || null };
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function setAuth(token) { localStorage.setItem(LS_AUTH, JSON.stringify({ token: token })); }
+        function clearAuth() { localStorage.removeItem(LS_AUTH); }
+
+        function showLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('show'); return; } }
+        function hideLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('hide'); return; } }
+
+        function setLoginError(msg) {
+          setText($('auth-error'), msg || '');
+          show($('auth-error'), !!msg);
+        }
+
+        function login(username, password) {
+          return fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+          }).then(function (r) {
+            if (!r.ok) return r.json().catch(function () { return {}; }).then(function (d) {
+              var msg = (d && d.error) ? d.error : ('No se pudo iniciar sesion. (' + r.status + ')');
+              throw new Error(msg);
+            });
+            return r.json();
+          }).then(function (data) {
+            if (!data || !data.token) throw new Error('Respuesta invalida del servidor.');
+            setAuth(data.token);
+          });
+        }
+
+        function setPageError(msg) {
+          setText($('page-error'), msg || '');
+          show($('page-error'), !!msg);
+        }
+
+        function setPageSuccess(msg) {
+          setText($('page-success'), msg || '');
+          show($('page-success'), !!msg);
+          if (msg) setTimeout(function () { show($('page-success'), false); }, 2500);
+        }
+
+        function apiFetch(path, opts) {
+          var auth = getAuth();
+          if (!auth) return Promise.reject(new Error('No autenticado'));
+          opts = opts || {};
+          opts.headers = opts.headers || {};
+          opts.headers['Authorization'] = 'Bearer ' + auth.token;
+          return fetch(path, opts).then(function (r) {
+            if (!r.ok) {
+              return r.json().catch(function () { return {}; }).then(function (d) {
+                var msg = (d && d.error) ? d.error : ('Error (' + r.status + ')');
+                var err = new Error(msg);
+                err.status = r.status;
+                throw err;
+              });
+            }
+            return r.json().catch(function () { return {}; });
+          });
+        }
+
+        function isAdmin() {
+          var auth = getAuth();
+          return !!(auth && auth.rol === 'ADMINISTRADOR');
+        }
+
+        function renderAuth() {
+          var auth = getAuth();
+          var btn = $('auth-button');
+          var badge = $('auth-badge');
+          if (btn) btn.textContent = auth ? 'Log out' : 'Log in';
+          if (badge) {
+            show(badge, !!auth);
+            if (auth) setText(badge, auth.username + (auth.rol ? (' (' + auth.rol + ')') : ''));
+          }
+
+          show($('auth-gate'), !auth);
+          show($('admin-gate'), !!auth && !isAdmin());
+
+          $('btn-nueva-plantilla').disabled = !isAdmin();
+          $('btn-agregar-campo').disabled = !isAdmin() || !selectedPlantillaId;
+        }
+
+        function escapeHtml(s) {
+          return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+
+        function renderPlantillasList() {
+          var wrap = $('plantillas-list');
+          if (!wrap) return;
+          if (!cachePlantillas || cachePlantillas.length === 0) {
+            wrap.innerHTML = '<div class="text-muted">No hay plantillas.</div>';
+            return;
+          }
+
+          cachePlantillas.sort(function (a, b) {
+            var da = new Date(a.fechaCreacion || 0).getTime();
+            var db = new Date(b.fechaCreacion || 0).getTime();
+            return db - da;
+          });
+
+          var out = '';
+          for (var i = 0; i < cachePlantillas.length; i++) {
+            var p = cachePlantillas[i] || {};
+            var active = selectedPlantillaId && String(p.id) === String(selectedPlantillaId);
+            out += '<a href="javascript:void(0)" class="list-group-item' + (active ? ' active' : '') + '" data-id="' + escapeHtml(p.id || '') + '">'
+              + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+              + '<span>' + escapeHtml(p.nombre || '') + '</span>'
+              + (p.esDefault ? '<span class="label label-success">DEFAULT</span>' : '')
+              + '</div>'
+              + '</a>';
+          }
+          wrap.innerHTML = out;
+        }
+
+        function renderPlantillaDetail(p) {
+          show($('plantilla-empty'), !p);
+          show($('plantilla-detail'), !!p);
+          show($('plantilla-badge-default'), !!(p && p.esDefault));
+
+          $('btn-marcar-default').disabled = !isAdmin() || !p || !!p.esDefault;
+          $('btn-eliminar-plantilla').disabled = !isAdmin() || !p || !!p.esDefault;
+          $('btn-agregar-campo').disabled = !isAdmin() || !p;
+
+          if (!p) return;
+
+          setText($('plantilla-nombre'), p.nombre || '');
+          setText($('plantilla-descripcion'), p.descripcion || '');
+
+          var list = $('campos-extra-list');
+          var campos = (p.camposExtra && Array.isArray(p.camposExtra)) ? p.camposExtra.slice() : [];
+          campos.sort(function (a, b) { return (a.orden || 0) - (b.orden || 0); });
+
+          if (campos.length === 0) {
+            list.innerHTML = '<div class="text-muted">Sin campos adicionales.</div>';
+            return;
+          }
+
+          var out = '';
+          for (var i = 0; i < campos.length; i++) {
+            var c = campos[i] || {};
+            var req = c.requerido
+              ? '<span class="label label-primary" style="margin-left:6px;">Requerido</span>'
+              : '<span class="label label-default" style="margin-left:6px;">Opcional</span>';
+
+            out += '<div class="panel panel-info" data-cid="' + escapeHtml(c.id || '') + '">'
+              + '<div class="panel-heading">'
+              + '<strong>' + escapeHtml(c.label || '') + '</strong>'
+              + '<span class="text-muted" style="margin-left:8px;">(' + escapeHtml(c.tipo || '') + ')</span>'
+              + req
+              + '<span class="pull-right">'
+              + '<a href="javascript:void(0)" class="campo-edit" style="margin-right:10px;"><i class="fa fa-pencil"></i> Editar</a>'
+              + '<a href="javascript:void(0)" class="campo-del text-danger"><i class="fa fa-trash"></i> Eliminar</a>'
+              + '</span>'
+              + '<div style="clear:both"></div>'
+              + '</div>'
+              + '<div class="panel-body">'
+              + '<div class="text-muted">Orden: ' + escapeHtml(c.orden != null ? String(c.orden) : '0') + '</div>'
+              + (c.tipo === 'select' ? ('<div><small class="text-muted">Opciones: ' + escapeHtml((c.opciones || []).join(', ')) + '</small></div>') : '')
+              + '</div>'
+              + '</div>';
+          }
+          list.innerHTML = out;
+        }
+
+        function loadPlantillas() {
+          setPageError('');
+          var auth = getAuth();
+          if (!auth) {
+            cachePlantillas = [];
+            selectedPlantillaId = null;
+            renderPlantillasList();
+            renderPlantillaDetail(null);
+            renderAuth();
+            showLoginModal();
+            return;
+          }
+
+          apiFetch('/api/plantillas').then(function (arr) {
+            cachePlantillas = Array.isArray(arr) ? arr : [];
+            if (!selectedPlantillaId && cachePlantillas.length) {
+              var def = cachePlantillas.find(function (x) { return x && x.esDefault; });
+              selectedPlantillaId = def ? def.id : cachePlantillas[0].id;
+            }
+            renderPlantillasList();
+            if (selectedPlantillaId) return loadPlantilla(selectedPlantillaId);
+            renderPlantillaDetail(null);
+          }).catch(function (err) {
+            setPageError(err && err.message ? err.message : 'No se pudo cargar plantillas.');
+          }).finally(function () {
+            renderAuth();
+          });
+        }
+
+        function loadPlantilla(id) {
+          if (!id) return Promise.resolve();
+          return apiFetch('/api/plantillas/' + encodeURIComponent(id)).then(function (p) {
+            selectedPlantillaId = p && p.id ? p.id : id;
+            renderPlantillasList();
+            renderPlantillaDetail(p);
+            renderAuth();
+          }).catch(function (err) {
+            setPageError(err && err.message ? err.message : 'No se pudo cargar plantilla.');
+          });
+        }
+
+        function showPlantillaModal() {
+          setText($('plantilla-modal-error'), '');
+          show($('plantilla-modal-error'), false);
+          $('plantilla-nombre-input').value = '';
+          $('plantilla-desc-input').value = '';
+          if (window.$) $('#plantillaModal').modal('show');
+        }
+
+        function toggleOpciones() {
+          var tipo = $('campo-tipo').value;
+          show($('campo-opciones-wrap'), tipo === 'select');
+        }
+
+        function parseOpciones() {
+          var tipo = $('campo-tipo').value;
+          if (tipo !== 'select') return [];
+          var raw = ($('campo-opciones').value || '').split(/\r?\n/);
+          var out = [];
+          for (var i = 0; i < raw.length; i++) {
+            var t = raw[i].trim();
+            if (t) out.push(t);
+          }
+          return out;
+        }
+
+        function showCampoModal(mode, campo) {
+          setText($('campo-modal-error'), '');
+          show($('campo-modal-error'), false);
+
+          setText($('campoModalLabel'), mode === 'edit' ? 'Editar campo' : 'Agregar campo');
+          $('campo-id').value = (campo && campo.id) ? campo.id : '';
+          $('campo-label').value = (campo && campo.label) ? campo.label : '';
+          $('campo-tipo').value = (campo && campo.tipo) ? campo.tipo : 'text';
+          $('campo-requerido').checked = !!(campo && campo.requerido);
+          $('campo-orden').value = (campo && campo.orden != null) ? String(campo.orden) : '1';
+          $('campo-opciones').value = (campo && campo.opciones && Array.isArray(campo.opciones)) ? campo.opciones.join('\n') : '';
+          toggleOpciones();
+
+          if (window.$) $('#campoModal').modal('show');
+        }
+
+        function wireAuth() {
+          var authBtn = $('auth-button');
+          var loginForm = $('login-form');
+
+          authBtn.addEventListener('click', function () {
+            var auth = getAuth();
+            if (auth) {
+              clearAuth();
+              loadPlantillas();
+              return;
+            }
+            setLoginError('');
+            showLoginModal();
+          });
+
+          loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            setLoginError('');
+            var username = $('login-username').value.trim();
+            var password = $('login-password').value;
+            if (!username || !password) { setLoginError('Completa usuario y contrasena.'); return; }
+            $('login-submit').disabled = true;
+            login(username, password).then(function () {
+              hideLoginModal();
+              loadPlantillas();
+            }).catch(function (err) {
+              setLoginError(err && err.message ? err.message : 'No se pudo iniciar sesion.');
+            }).finally(function () {
+              $('login-submit').disabled = false;
+            });
+          });
+        }
+
+        function wireUI() {
+          $('plantillas-list').addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('.list-group-item') : null;
+            if (!a) return;
+            var id = a.getAttribute('data-id');
+            if (!id) return;
+            selectedPlantillaId = id;
+            renderPlantillasList();
+            loadPlantilla(id);
+          });
+
+          $('btn-nueva-plantilla').addEventListener('click', function () {
+            if (!isAdmin()) return;
+            showPlantillaModal();
+          });
+
+          $('plantilla-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!isAdmin()) return;
+            var nombre = $('plantilla-nombre-input').value.trim();
+            var descripcion = $('plantilla-desc-input').value.trim();
+            if (!nombre) {
+              setText($('plantilla-modal-error'), 'Nombre es requerido.');
+              show($('plantilla-modal-error'), true);
+              return;
+            }
+            $('plantilla-guardar').disabled = true;
+            apiFetch('/api/plantillas', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nombre: nombre, descripcion: descripcion || null })
+            }).then(function (p) {
+              if (window.$) $('#plantillaModal').modal('hide');
+              selectedPlantillaId = p && p.id ? p.id : null;
+              setPageSuccess('Plantilla creada.');
+              return loadPlantillas();
+            }).catch(function (err) {
+              setText($('plantilla-modal-error'), err && err.message ? err.message : 'No se pudo crear.');
+              show($('plantilla-modal-error'), true);
+            }).finally(function () {
+              $('plantilla-guardar').disabled = false;
+            });
+          });
+
+          $('btn-marcar-default').addEventListener('click', function () {
+            if (!isAdmin() || !selectedPlantillaId) return;
+            apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId) + '/default', { method: 'POST' })
+              .then(function () { setPageSuccess('Plantilla marcada como default.'); return loadPlantillas(); })
+              .catch(function (err) { setPageError(err && err.message ? err.message : 'No se pudo marcar default.'); });
+          });
+
+          $('btn-eliminar-plantilla').addEventListener('click', function () {
+            if (!isAdmin() || !selectedPlantillaId) return;
+            if (!confirm('Eliminar la plantilla seleccionada?')) return;
+            apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId), { method: 'DELETE' })
+              .then(function () { selectedPlantillaId = null; setPageSuccess('Plantilla eliminada.'); return loadPlantillas(); })
+              .catch(function (err) { setPageError(err && err.message ? err.message : 'No se pudo eliminar.'); });
+          });
+
+          $('btn-agregar-campo').addEventListener('click', function () {
+            if (!isAdmin() || !selectedPlantillaId) return;
+            showCampoModal('add', null);
+          });
+
+          $('campo-tipo').addEventListener('change', toggleOpciones);
+
+          $('campo-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!isAdmin() || !selectedPlantillaId) return;
+            var cid = $('campo-id').value || '';
+            var label = $('campo-label').value.trim();
+            var tipo = $('campo-tipo').value;
+            var requerido = $('campo-requerido').checked;
+            var orden = Number($('campo-orden').value || 0);
+            if (!label) {
+              setText($('campo-modal-error'), 'Label es requerido.');
+              show($('campo-modal-error'), true);
+              return;
+            }
+            if (!isFinite(orden)) orden = 0;
+            var opciones = parseOpciones();
+
+            $('campo-guardar').disabled = true;
+            var url = '/api/plantillas/' + encodeURIComponent(selectedPlantillaId) + '/campos' + (cid ? ('/' + encodeURIComponent(cid)) : '');
+            var method = cid ? 'PUT' : 'POST';
+            apiFetch(url, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: cid || null, label: label, tipo: tipo, opciones: opciones, requerido: requerido, orden: orden })
+            }).then(function () {
+              if (window.$) $('#campoModal').modal('hide');
+              setPageSuccess('Campo guardado.');
+              return loadPlantilla(selectedPlantillaId);
+            }).catch(function (err) {
+              setText($('campo-modal-error'), err && err.message ? err.message : 'No se pudo guardar.');
+              show($('campo-modal-error'), true);
+            }).finally(function () {
+              $('campo-guardar').disabled = false;
+            });
+          });
+
+          $('campos-extra-list').addEventListener('click', function (e) {
+            var panel = e.target && e.target.closest ? e.target.closest('.panel') : null;
+            if (!panel) return;
+            var cid = panel.getAttribute('data-cid');
+            if (!cid) return;
+
+            var edit = e.target && e.target.closest ? e.target.closest('.campo-edit') : null;
+            var del = e.target && e.target.closest ? e.target.closest('.campo-del') : null;
+            if (!edit && !del) return;
+            if (!isAdmin()) return;
+
+            apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId)).then(function (tpl) {
+              var campos = (tpl && tpl.camposExtra && Array.isArray(tpl.camposExtra)) ? tpl.camposExtra : [];
+              var campo = campos.find(function (x) { return x && String(x.id) === String(cid); });
+              if (!campo) throw new Error('Campo no encontrado');
+
+              if (edit) {
+                showCampoModal('edit', campo);
+                return;
+              }
+
+              if (del) {
+                if (!confirm('Eliminar este campo?')) return;
+                return apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId) + '/campos/' + encodeURIComponent(cid), { method: 'DELETE' })
+                  .then(function () { setPageSuccess('Campo eliminado.'); return loadPlantilla(selectedPlantillaId); });
+              }
+            }).catch(function (err) {
+              setPageError(err && err.message ? err.message : 'Operacion fallida.');
+            });
+          });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          if (!getAuth()) clearAuth();
+          wireAuth();
+          wireUI();
+          renderAuth();
+          loadPlantillas();
+        });
+      })();
+      </script>
+  </body>
+</html>

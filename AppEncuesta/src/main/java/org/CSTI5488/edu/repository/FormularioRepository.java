@@ -11,6 +11,7 @@ import org.bson.types.ObjectId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class FormularioRepository {
 
@@ -21,6 +22,12 @@ public class FormularioRepository {
     }
 
     public void save(Formulario formulario) {
+        Document camposExtraDoc = null;
+        Map<String, Object> camposExtra = formulario.getCamposExtra();
+        if (camposExtra != null) {
+            camposExtraDoc = new Document(camposExtra);
+        }
+
         Document doc = new Document()
             .append("_id", new ObjectId())
             .append("nombre", formulario.getNombre())
@@ -30,6 +37,7 @@ public class FormularioRepository {
             .append("latitud", formulario.getLatitud())
             .append("longitud", formulario.getLongitud())
             .append("fotoBase64", formulario.getFotoBase64())
+            .append("camposExtra", camposExtraDoc)
             .append("fechaRegistro", formulario.getFechaRegistro() != null ? formulario.getFechaRegistro() : new Date());
         collection.insertOne(doc);
     }
@@ -52,6 +60,10 @@ public class FormularioRepository {
         f.setLatitud(doc.getDouble("latitud"));
         f.setLongitud(doc.getDouble("longitud"));
         f.setFotoBase64(doc.getString("fotoBase64"));
+        Object rawExtra = doc.get("camposExtra");
+        if (rawExtra instanceof Document) {
+            f.setCamposExtra(((Document) rawExtra));
+        }
         f.setFechaRegistro(doc.getDate("fechaRegistro"));
         return f;
     }
