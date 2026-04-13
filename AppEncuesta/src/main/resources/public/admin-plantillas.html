@@ -420,9 +420,14 @@
             if (auth) setText(badge, auth.username + (auth.rol ? (' (' + auth.rol + ')') : ''));
           }
 
+          // Si no hay token, permitir login pero sin acceso a admin
           show($('auth-gate'), !auth);
-          show($('admin-gate'), !!auth && !isAdmin());
+          
+          // Si hay token pero no es ADMIN, mostrar mensaje sobre roles limitados
+          var hasLimitedAccess = !!auth && !isAdmin();
+          show($('admin-gate'), hasLimitedAccess);
 
+          // Deshabilitar botones para no-admin
           $('btn-nueva-plantilla').disabled = !isAdmin();
           $('btn-agregar-campo').disabled = !isAdmin() || !selectedPlantillaId;
         }
@@ -517,6 +522,8 @@
         function loadPlantillas() {
           setPageError('');
           var auth = getAuth();
+          
+          // Si no hay auth en absoluto
           if (!auth) {
             cachePlantillas = [];
             selectedPlantillaId = null;
@@ -527,6 +534,26 @@
             return;
           }
 
+          // Si hay auth pero no es ADMIN, mostrar lista en lectura
+          if (!isAdmin()) {
+            apiFetch('/api/plantillas').then(function (arr) {
+              cachePlantillas = Array.isArray(arr) ? arr : [];
+              renderPlantillasList();
+              if (cachePlantillas.length && !selectedPlantillaId) {
+                selectedPlantillaId = cachePlantillas[0].id;
+                renderPlantillasList();
+              }
+              if (selectedPlantillaId) return loadPlantilla(selectedPlantillaId);
+              renderPlantillaDetail(null);
+            }).catch(function (err) {
+              setPageError(err && err.message ? err.message : 'No se pudo cargar plantillas.');
+            }).finally(function () {
+              renderAuth();
+            });
+            return;
+          }
+
+          // Si es ADMIN, cargar normalmente
           apiFetch('/api/plantillas').then(function (arr) {
             cachePlantillas = Array.isArray(arr) ? arr : [];
             if (!selectedPlantillaId && cachePlantillas.length) {
@@ -647,15 +674,23 @@
 
           $('plantilla-form').addEventListener('submit', function (e) {
             e.preventDefault();
-            if (!isAdmin()) return;
+            if (!isAdmin()) {
+              alert('No tienes permisos para crear plantillas.');
+              return;
+            }
+            
             var nombre = $('plantilla-nombre-input').value.trim();
             var descripcion = $('plantilla-desc-input').value.trim();
+            
             if (!nombre) {
               setText($('plantilla-modal-error'), 'Nombre es requerido.');
               show($('plantilla-modal-error'), true);
               return;
             }
-            $('plantilla-guardar').disabled = true;
+            
+            var guardarBtn = $('plantilla-guardar');
+            guardarBtn.disabled = true;
+            
             apiFetch('/api/plantillas', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -663,33 +698,69 @@
             }).then(function (p) {
               if (window.$) $('#plantillaModal').modal('hide');
               selectedPlantillaId = p && p.id ? p.id : null;
-              setPageSuccess('Plantilla creada.');
+              setPageSuccess('Plantilla creada exitosamente.');
               return loadPlantillas();
             }).catch(function (err) {
-              setText($('plantilla-modal-error'), err && err.message ? err.message : 'No se pudo crear.');
+              setText($('plantilla-modal-error'), err && err.message ? err.message : 'No se pudo crear la plantilla.');
               show($('plantilla-modal-error'), true);
             }).finally(function () {
-              $('plantilla-guardar').disabled = false;
+              guardarBtn.disabled = false;
             });
           });
 
           $('btn-marcar-default').addEventListener('click', function () {
-            if (!isAdmin() || !selectedPlantillaId) return;
+            if (!isAdmin() || !selectedPlantillaId) {
+              alert('No tienes permisos o plantilla no seleccionada.');
+              return;
+            }
+            
+            var selected = cachePlantillas.find(function (p) { return String(p.id) === String(selectedPlantillaId); });
+            if (selected && selected.esDefault) {
+              alert('Esta plantilla ya está marcada como DEFAULT.');
+              return;
+            }
+            
             apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId) + '/default', { method: 'POST' })
-              .then(function () { setPageSuccess('Plantilla marcada como default.'); return loadPlantillas(); })
-              .catch(function (err) { setPageError(err && err.message ? err.message : 'No se pudo marcar default.'); });
+              .then(function () { 
+                setPageSuccess('Plantilla marcada como DEFAULT.'); 
+                return loadPlantillas(); 
+              })
+              .catch(function (err) { 
+                setPageError(err && err.message ? err.message : 'No se pudo marcar como DEFAULT.'); 
+              });
           });
 
           $('btn-eliminar-plantilla').addEventListener('click', function () {
-            if (!isAdmin() || !selectedPlantillaId) return;
+            if (!isAdmin() || !selectedPlantillaId) {
+              alert('No tienes permisos para eliminar plantillas.');
+              return;
+            }
+
+            // Validar que no sea default antes de eliminar
+            var selected = cachePlantillas.find(function (p) { return String(p.id) === String(selectedPlantillaId); });
+            if (selected && selected.esDefault) {
+              alert('No se puede eliminar una plantilla marcada como DEFAULT. Marca otra como DEFAULT primero.');
+              return;
+            }
+
             if (!confirm('Eliminar la plantilla seleccionada?')) return;
+            
             apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId), { method: 'DELETE' })
-              .then(function () { selectedPlantillaId = null; setPageSuccess('Plantilla eliminada.'); return loadPlantillas(); })
-              .catch(function (err) { setPageError(err && err.message ? err.message : 'No se pudo eliminar.'); });
+              .then(function () { 
+                selectedPlantillaId = null; 
+                setPageSuccess('Plantilla eliminada.'); 
+                return loadPlantillas(); 
+              })
+              .catch(function (err) { 
+                setPageError(err && err.message ? err.message : 'No se pudo eliminar.'); 
+              });
           });
 
           $('btn-agregar-campo').addEventListener('click', function () {
-            if (!isAdmin() || !selectedPlantillaId) return;
+            if (!isAdmin() || !selectedPlantillaId) {
+              alert('No tienes permisos o debes seleccionar una plantilla.');
+              return;
+            }
             showCampoModal('add', null);
           });
 
@@ -697,36 +768,46 @@
 
           $('campo-form').addEventListener('submit', function (e) {
             e.preventDefault();
-            if (!isAdmin() || !selectedPlantillaId) return;
+            if (!isAdmin() || !selectedPlantillaId) {
+              alert('No tienes permisos o plantilla no seleccionada.');
+              return;
+            }
+            
             var cid = $('campo-id').value || '';
             var label = $('campo-label').value.trim();
             var tipo = $('campo-tipo').value;
             var requerido = $('campo-requerido').checked;
             var orden = Number($('campo-orden').value || 0);
+            
             if (!label) {
               setText($('campo-modal-error'), 'Label es requerido.');
               show($('campo-modal-error'), true);
               return;
             }
+            
             if (!isFinite(orden)) orden = 0;
             var opciones = parseOpciones();
 
-            $('campo-guardar').disabled = true;
+            var guardarBtn = $('campo-guardar');
+            guardarBtn.disabled = true;
+            
             var url = '/api/plantillas/' + encodeURIComponent(selectedPlantillaId) + '/campos' + (cid ? ('/' + encodeURIComponent(cid)) : '');
             var method = cid ? 'PUT' : 'POST';
+            var isEdit = !!cid;
+            
             apiFetch(url, {
               method: method,
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: cid || null, label: label, tipo: tipo, opciones: opciones, requerido: requerido, orden: orden })
             }).then(function () {
               if (window.$) $('#campoModal').modal('hide');
-              setPageSuccess('Campo guardado.');
+              setPageSuccess('Campo ' + (isEdit ? 'actualizado' : 'agregado') + ' exitosamente.');
               return loadPlantilla(selectedPlantillaId);
             }).catch(function (err) {
-              setText($('campo-modal-error'), err && err.message ? err.message : 'No se pudo guardar.');
+              setText($('campo-modal-error'), err && err.message ? err.message : 'No se pudo guardar el campo.');
               show($('campo-modal-error'), true);
             }).finally(function () {
-              $('campo-guardar').disabled = false;
+              guardarBtn.disabled = false;
             });
           });
 
@@ -739,12 +820,16 @@
             var edit = e.target && e.target.closest ? e.target.closest('.campo-edit') : null;
             var del = e.target && e.target.closest ? e.target.closest('.campo-del') : null;
             if (!edit && !del) return;
-            if (!isAdmin()) return;
+            
+            if (!isAdmin()) {
+              alert('No tienes permisos para modificar campos.');
+              return;
+            }
 
             apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId)).then(function (tpl) {
               var campos = (tpl && tpl.camposExtra && Array.isArray(tpl.camposExtra)) ? tpl.camposExtra : [];
               var campo = campos.find(function (x) { return x && String(x.id) === String(cid); });
-              if (!campo) throw new Error('Campo no encontrado');
+              if (!campo) throw new Error('Campo no encontrado en la plantilla');
 
               if (edit) {
                 showCampoModal('edit', campo);
@@ -752,18 +837,41 @@
               }
 
               if (del) {
-                if (!confirm('Eliminar este campo?')) return;
+                if (!confirm('Eliminar este campo de la plantilla?')) return;
                 return apiFetch('/api/plantillas/' + encodeURIComponent(selectedPlantillaId) + '/campos/' + encodeURIComponent(cid), { method: 'DELETE' })
-                  .then(function () { setPageSuccess('Campo eliminado.'); return loadPlantilla(selectedPlantillaId); });
+                  .then(function () { 
+                    setPageSuccess('Campo eliminado de la plantilla.'); 
+                    return loadPlantilla(selectedPlantillaId); 
+                  })
+                  .catch(function (err) {
+                    setPageError(err && err.message ? err.message : 'No se pudo eliminar el campo.');
+                  });
               }
             }).catch(function (err) {
-              setPageError(err && err.message ? err.message : 'Operacion fallida.');
+              setPageError(err && err.message ? err.message : 'No se pudo cargar la plantilla para modificar.');
             });
           });
         }
 
         document.addEventListener('DOMContentLoaded', function () {
           if (!getAuth()) clearAuth();
+          
+          // Validar que sea ADMIN, si no redirigir
+          var auth = getAuth();
+          if (auth && !isAdmin()) {
+            // Usuario autenticado pero no ADMIN, mostrar mensaje
+            var adminGate = $('admin-gate');
+            if (adminGate) {
+              adminGate.innerHTML = '<strong>Acceso denegado:</strong> Solo administradores pueden acceder a esta página. ' +
+                '<a href="index.html" style="font-weight:bold;">Volver al inicio</a>';
+              show(adminGate, true);
+            }
+            // Opcionalmente, redirigir después de 3 segundos
+            setTimeout(function () {
+              window.location.href = 'index.html';
+            }, 5000);
+          }
+          
           wireAuth();
           wireUI();
           renderAuth();
