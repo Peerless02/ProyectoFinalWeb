@@ -162,7 +162,7 @@
             <div class="col-md-12">
               <div class="mu-title-area">
                 <h2 class="mu-title">Mis encuestas</h2>
-                <p>Guardadas en modo local (localStorage) por <code>usuarioRegistro</code>.</p>
+                <p>Combina encuestas sincronizadas del servidor con formularios locales pendientes.</p>
               </div>
             </div>
           </div>
@@ -171,6 +171,7 @@
             <div class="col-sm-6">
               <button class="btn btn-default" id="formularios-export"><i class="fa fa-download"></i> Exportar JSON</button>
               <button class="btn btn-danger" id="formularios-clear"><i class="fa fa-trash"></i> Limpiar mis encuestas</button>
+              <button class="btn btn-success" id="formularios-sync" style="display:none;"><i class="fa fa-cloud-upload"></i> Sincronizar pendientes</button>
             </div>
           </div>
 
@@ -185,6 +186,7 @@
                       <th>Sector</th>
                       <th>Nivel</th>
                       <th>Lat/Lng</th>
+                      <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>

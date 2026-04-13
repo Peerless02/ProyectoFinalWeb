@@ -153,42 +153,112 @@
     if (!tbody) return;
 
     if (!auth) {
-      tbody.innerHTML = '<tr><td colspan="6">Inicia sesion para ver tus encuestas.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7">Inicia sesion para ver tus encuestas.</td></tr>';
       return;
     }
 
+    // Cargar formularios locales del usuario
     var all = readFormularios();
-    var mine = all.filter(function (f) {
+    var localMine = all.filter(function (f) {
       return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase();
     });
 
-    if (mine.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6">No hay encuestas registradas.</td></tr>';
-      return;
-    }
+    // Cargar formularios del servidor y combinar con locales
+    loadServerFormularios(auth.username, auth.token, function (serverFormularios) {
+      // Combinar: formularios del servidor + formularios locales pendientes
+      var combined = [];
 
-    mine.sort(function (a, b) {
-      var da = new Date(a.fechaRegistro || 0).getTime();
-      var db = new Date(b.fechaRegistro || 0).getTime();
-      return db - da;
+      // Agregar formularios del servidor (marcar como sincronizados)
+      if (serverFormularios && serverFormularios.length > 0) {
+        for (var i = 0; i < serverFormularios.length; i++) {
+          var sf = serverFormularios[i];
+          sf.fromServer = true;
+          sf.sincronizado = true;
+          combined.push(sf);
+        }
+      }
+
+      // Agregar formularios locales pendientes (no sincronizados)
+      for (var j = 0; j < localMine.length; j++) {
+        var lf = localMine[j];
+        if (!lf.sincronizado) {
+          lf.fromServer = false;
+          combined.push(lf);
+        }
+      }
+
+      if (combined.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay encuestas registradas.</td></tr>';
+        return;
+      }
+
+      // Ordenar por fecha (las del servidor sin fecha van al final)
+      combined.sort(function (a, b) {
+        var da = new Date(a.fechaRegistro || 0).getTime();
+        var db = new Date(b.fechaRegistro || 0).getTime();
+        return db - da;
+      });
+
+      var out = '';
+      for (var k = 0; k < combined.length; k++) {
+        var f = combined[k] || {};
+        var img = f.fotoBase64 ? ('<img class="mu-form-avatar" src="' + f.fotoBase64 + '" alt="foto">') : '';
+        
+        // Estado: verde si sincronizado, amarillo si pendiente
+        var estadoBadge = f.sincronizado 
+          ? '<span class="label label-success">Sincronizado</span>'
+          : '<span class="label label-warning">Pendiente</span>';
+        
+        // Solo permitir eliminar si es local pendiente
+        var delBtn = !f.sincronizado
+          ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
+          : '<button type="button" class="btn btn-xs btn-default" disabled>No editar</button>';
+
+        out += '<tr data-id="' + String(f.id || '') + '" data-synced="' + (f.sincronizado ? 'true' : 'false') + '">'
+          + '<td style="white-space:nowrap;">' + String(f.id || '').slice(0, 8) + '</td>'
+          + '<td>' + (img ? (img + ' ') : '') + escapeHtml(f.nombre || '') + '</td>'
+          + '<td>' + escapeHtml(f.sector || '') + '</td>'
+          + '<td>' + escapeHtml(f.nivelEscolar || '') + '</td>'
+          + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
+          + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
+          + '<td style="white-space:nowrap;">'
+          + delBtn
+          + '</td>'
+          + '</tr>';
+      }
+      tbody.innerHTML = out;
+
+      // Mostrar/ocultar botón "Sincronizar pendientes" según hay formularios pendientes
+      var syncBtn = $('formularios-sync');
+      if (syncBtn) {
+        var hasPending = localMine.filter(function (f) { return !f.sincronizado; }).length > 0;
+        show(syncBtn, hasPending);
+      }
     });
+  }
 
-    var out = '';
-    for (var i = 0; i < mine.length; i++) {
-      var f = mine[i] || {};
-      var img = f.fotoBase64 ? ('<img class="mu-form-avatar" src="' + f.fotoBase64 + '" alt="foto">') : '';
-      out += '<tr data-id="' + String(f.id || '') + '">'
-        + '<td style="white-space:nowrap;">' + String(f.id || '').slice(0, 8) + '</td>'
-        + '<td>' + (img ? (img + ' ') : '') + escapeHtml(f.nombre || '') + '</td>'
-        + '<td>' + escapeHtml(f.sector || '') + '</td>'
-        + '<td>' + escapeHtml(f.nivelEscolar || '') + '</td>'
-        + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
-        + '<td style="white-space:nowrap;">'
-        + '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
-        + '</td>'
-        + '</tr>';
-    }
-    tbody.innerHTML = out;
+  function loadServerFormularios(username, token, callback) {
+    // Cargar formularios del servidor
+    fetch('/api/formularios/usuario/' + encodeURIComponent(username), {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
+    }).then(function (r) {
+      if (!r.ok) {
+        // Si falla, simplemente continuar con locales
+        console.warn('Error cargando formularios del servidor:', r.status);
+        callback([]);
+        return;
+      }
+      return r.json();
+    }).then(function (data) {
+      callback(Array.isArray(data) ? data : []);
+    }).catch(function (err) {
+      console.error('Error en loadServerFormularios:', err);
+      callback([]);
+    });
   }
 
   function escapeHtml(s) {
@@ -446,8 +516,17 @@
       tbody.addEventListener('click', function (e) {
         var t = e.target;
         if (!t || !t.classList || !t.classList.contains('mu-form-del')) return;
+        
         var tr = t.closest('tr');
         var id = tr ? tr.getAttribute('data-id') : null;
+        var synced = tr ? tr.getAttribute('data-synced') : 'false';
+        
+        // Solo permitir eliminar si es pendiente (no sincronizado)
+        if (synced === 'true') {
+          alert('No se pueden eliminar encuestas sincronizadas con el servidor.');
+          return;
+        }
+        
         if (!id) return;
         var all = readFormularios();
         var next = all.filter(function (x) { return String(x.id) !== String(id); });
@@ -500,6 +579,157 @@
         renderList();
       });
     }
+
+    var syncBtn = $('formularios-sync');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', function () {
+        var auth = getAuth();
+        if (!auth) {
+          showLoginModal();
+          return;
+        }
+
+        var all = readFormularios();
+        var pending = all.filter(function (f) {
+          return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase() &&
+                 !f.sincronizado;
+        });
+
+        if (pending.length === 0) {
+          alert('No hay encuestas pendientes para sincronizar.');
+          return;
+        }
+
+        // Deshabilitar botón durante la sincronización
+        syncBtn.disabled = true;
+        setText(syncBtn, '');
+        syncBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sincronizando...';
+
+        // Iniciar sincronización vía WebSocket (sync-worker.js)
+        initiateSyncViaWebSocket(auth.token, pending, function (success, result) {
+          syncBtn.disabled = false;
+          if (success) {
+            // Actualizar formularios como sincronizados en localStorage
+            for (var i = 0; i < pending.length; i++) {
+              pending[i].sincronizado = true;
+            }
+            writeFormularios(all);
+            setText(syncBtn, '');
+            syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
+            renderList();
+            alert('Encuestas sincronizadas exitosamente.');
+          } else {
+            setText(syncBtn, '');
+            syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
+            alert('Error en la sincronización: ' + (result || 'Error desconocido'));
+          }
+        });
+      });
+    }
+  }
+
+  function initiateSyncViaWebSocket(token, pendingFormularios, callback) {
+    // Usar Web Worker para sincronización (no bloquea la UI)
+    if (typeof Worker === 'undefined') {
+      // Fallback: sincronización directa si no soporta Web Workers
+      syncDirectly(token, pendingFormularios, callback);
+      return;
+    }
+
+    var worker;
+    try {
+      worker = new Worker('js/sync-worker.js');
+    } catch (err) {
+      console.warn('No se pudo crear Web Worker, usando sincronización directa:', err);
+      syncDirectly(token, pendingFormularios, callback);
+      return;
+    }
+
+    // Preparar URL del WebSocket
+    var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var wsUrl = wsProtocol + '//' + window.location.host + '/sync';
+
+    // Enviar datos al worker
+    worker.postMessage({
+      token: token,
+      formularios: pendingFormularios,
+      wsUrl: wsUrl
+    });
+
+    // Recibir respuesta del worker
+    worker.onmessage = function (event) {
+      var response = event.data;
+      worker.terminate();
+      callback(response.success, response.message);
+    };
+
+    worker.onerror = function (err) {
+      console.error('Error en Web Worker:', err);
+      worker.terminate();
+      callback(false, 'Error en el proceso de sincronización');
+    };
+
+    // Timeout de 20 segundos
+    setTimeout(function () {
+      if (worker) {
+        try {
+          worker.terminate();
+        } catch (e) {}
+        callback(false, 'Tiempo de espera agotado');
+      }
+    }, 20000);
+  }
+
+  function syncDirectly(token, pendingFormularios, callback) {
+    // Fallback: sincronización directa vía WebSocket sin Web Worker
+    var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var wsUrl = wsProtocol + '//' + window.location.host + '/sync';
+    var ws;
+
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (err) {
+      console.error('Error creando WebSocket:', err);
+      callback(false, 'No se pudo conectar al servidor de sincronización.');
+      return;
+    }
+
+    ws.onopen = function () {
+      var message = {
+        token: token,
+        action: 'sync',
+        formularios: pendingFormularios
+      };
+      ws.send(JSON.stringify(message));
+    };
+
+    ws.onmessage = function (event) {
+      try {
+        var response = JSON.parse(event.data);
+        if (response.success) {
+          callback(true, response.message);
+        } else {
+          callback(false, response.message || 'Error en la sincronización');
+        }
+      } catch (err) {
+        callback(false, 'Error al procesar respuesta del servidor');
+      } finally {
+        ws.close();
+      }
+    };
+
+    ws.onerror = function (err) {
+      console.error('Error en WebSocket:', err);
+      callback(false, 'Error de conexión con el servidor');
+    };
+
+    // Timeout de 15 segundos
+    setTimeout(function () {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+        callback(false, 'Tiempo de espera agotado');
+      }
+    }, 15000);
   }
 
   document.addEventListener('DOMContentLoaded', function () {
