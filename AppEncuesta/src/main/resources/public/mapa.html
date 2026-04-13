@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AppEncuesta : Mapa</title>
+
+    <link rel="shortcut icon" type="image/icon" href="images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link id="switcher" href="assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+      #leaflet-map {
+        height: 520px;
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+      }
+      #mapa-count {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-mapa" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">AppEncuesta</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-mapa">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li><a href="index.html">Inicio</a></li>
+              <li class="active"><a href="mapa.html">Mapa</a></li>
+              <li><a href="usuarios.html">Usuarios</a></li>
+            </ul>
+          </div>
+
+          <ul class="nav navbar-nav navbar-right" style="margin-right:0;">
+            <li style="padding:15px 10px;">
+              <span id="auth-badge" class="label label-default" style="display:none"></span>
+            </li>
+            <li><a href="index.html" id="auth-button">Log in</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top:120px;padding-bottom:40px;">
+                <h1>MAPA</h1>
+                <p class="mu-event-date-line">Encuestas georreferenciadas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top:20px;">
+      <section id="mu-mapa">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-title-area">
+                <h2 class="mu-title">Mapa de encuestas</h2>
+                <p>Registros con coordenadas GPS capturadas al momento del registro.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-bottom:10px;">
+            <div class="col-sm-8">
+              <div id="mapa-status" class="alert alert-info" style="display:none"></div>
+            </div>
+            <div class="col-sm-4 text-right">
+              <button id="mapa-reload" class="btn btn-default">
+                <i class="fa fa-refresh"></i> Recargar
+              </button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12">
+              <div id="mapa-count"></div>
+              <div id="leaflet-map"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/mapa.js"></script>
+  </body>
+</html>

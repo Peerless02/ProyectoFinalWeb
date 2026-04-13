@@ -6,6 +6,9 @@
   var LS_AUTH = 'appencuesta.auth';
   var LS_FORMULARIOS = 'appencuesta.formularios';
 
+  var syncWorker = null;
+  var isSyncing = false;
+
   function $(id) {
     return document.getElementById(id);
   }
@@ -144,7 +147,8 @@
     var createWrap = $('mu-formulario-create');
     if (createWrap) show(createWrap, true);
     var listWrap = $('mu-formulario-list');
-    if (listWrap) show(listWrap, true);
+    if (listWrap) show(listWrap, !!auth);
+    renderSyncBadge();
   }
 
   function renderList() {
@@ -259,6 +263,84 @@
       console.error('Error en loadServerFormularios:', err);
       callback([]);
     });
+  }
+
+  function getWsUrl() {
+    return (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/sync';
+  }
+
+  function renderSyncBadge() {
+    var badge = $('sync-badge');
+    if (!badge) return;
+    var auth = getAuth();
+    if (!auth) {
+      setText(badge, '');
+      show(badge, false);
+      return;
+    }
+    var all = readFormularios();
+    var pending = all.filter(function (f) {
+      return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase()
+        && f.sincronizado === false;
+    });
+    if (pending.length === 0) {
+      setText(badge, '');
+      show(badge, false);
+    } else {
+      setText(badge, String(pending.length) + ' pendiente' + (pending.length === 1 ? '' : 's'));
+      show(badge, true);
+    }
+  }
+
+  function triggerSync() {
+    if (!navigator.onLine) return;
+    var auth = getAuth();
+    if (!auth) return;
+    if (!syncWorker) return;
+    if (isSyncing) return;
+
+    var all = readFormularios();
+    var unsynced = all.filter(function (f) {
+      return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase()
+        && f.sincronizado === false;
+    });
+    if (unsynced.length === 0) return;
+
+    isSyncing = true;
+    syncWorker.postMessage({
+      type: 'SYNC',
+      formularios: unsynced,
+      token: auth.token,
+      wsUrl: getWsUrl()
+    });
+  }
+
+  function handleWorkerMessage(e) {
+    var data = e.data;
+    isSyncing = false;
+    if (!data) return;
+
+    if (data.type === 'SYNC_RESULT') {
+      var result = data.result || {};
+      var ids = result.idsGuardados;
+      if (Array.isArray(ids) && ids.length > 0) {
+        var savedSet = {};
+        for (var i = 0; i < ids.length; i++) {
+          savedSet[String(ids[i])] = true;
+        }
+        var all = readFormularios();
+        for (var j = 0; j < all.length; j++) {
+          if (savedSet[String(all[j].id)]) {
+            all[j].sincronizado = true;
+          }
+        }
+        writeFormularios(all);
+        renderList();
+        renderSyncBadge();
+      }
+    } else if (data.type === 'SYNC_ERROR') {
+      console.warn('[Sync] Error de sincronizacion:', data.message);
+    }
   }
 
   function escapeHtml(s) {
@@ -507,6 +589,8 @@
       if (photoPreview) show(photoPreview, false);
       if (photoBase64) photoBase64.value = '';
       renderList();
+      renderSyncBadge();
+      if (navigator.onLine) { triggerSync(); }
     });
   }
 
@@ -736,10 +820,29 @@
     // If auth is invalid/expired, drop it.
     if (!getAuth()) clearAuth();
 
+    // Inicializar Web Worker de sincronizacion
+    try {
+      syncWorker = new Worker('js/sync-worker.js');
+      syncWorker.onmessage = handleWorkerMessage;
+      syncWorker.onerror = function (err) {
+        console.error('[SyncWorker] Error inesperado:', err.message);
+        isSyncing = false;
+      };
+    } catch (e) {
+      console.warn('[SyncWorker] No se pudo iniciar el worker de sincronizacion:', e);
+    }
+
     wireAuth();
     wireCreate();
     wireListActions();
     renderAuth();
     renderList();
+    renderSyncBadge();
+
+    // Sincronizar al recuperar conexion
+    window.addEventListener('online', triggerSync);
+
+    // Intentar sync inicial si ya hay conexion
+    triggerSync();
   });
 })();

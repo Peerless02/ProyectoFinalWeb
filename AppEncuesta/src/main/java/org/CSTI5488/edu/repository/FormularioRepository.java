@@ -50,6 +50,18 @@ public class FormularioRepository {
         return resultado;
     }
 
+    public List<Formulario> findWithCoords() {
+        List<Formulario> resultado = new ArrayList<>();
+        var filter = Filters.and(
+            Filters.exists("latitud"), Filters.ne("latitud", null),
+            Filters.exists("longitud"), Filters.ne("longitud", null)
+        );
+        for (Document doc : collection.find(filter)) {
+            resultado.add(docToFormulario(doc));
+        }
+        return resultado;
+    }
+
     private Formulario docToFormulario(Document doc) {
         Formulario f = new Formulario();
         f.setId(doc.getObjectId("_id").toHexString());

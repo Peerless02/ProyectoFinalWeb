@@ -187,6 +187,20 @@
 
       var allUsers = [];
 
+      function getToken() {
+        try {
+          var raw = localStorage.getItem('appencuesta.auth');
+          if (!raw) return null;
+          var a = JSON.parse(raw);
+          return (a && a.token) ? a.token : null;
+        } catch (e) { return null; }
+      }
+
+      function authHeaders() {
+        var token = getToken();
+        return token ? { 'Authorization': 'Bearer ' + token } : {};
+      }
+
       function showPageError(msg) {
         pageError.textContent = msg || 'Error';
         pageError.style.display = 'block';
@@ -210,12 +224,8 @@
         Object.keys(formDataObj).forEach(function (k) {
           if (formDataObj[k] !== undefined && formDataObj[k] !== null) params.append(k, formDataObj[k]);
         });
-        return fetch(url, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString()
-        });
+        var headers = Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded' }, authHeaders());
+        return fetch(url, { method: 'POST', headers: headers, body: params.toString() });
       }
 
       function roleLabel(r) {
@@ -277,7 +287,7 @@
       function loadUsers() {
         clearPageError();
         usersTbody.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
-        return fetch('/api/admin/users', { credentials: 'same-origin' })
+        return fetch('/api/admin/users', { headers: authHeaders() })
           .then(function (r) {
             if (r.status === 401 || r.status === 403) {
               window.location.href = 'index.html';
@@ -299,7 +309,9 @@
       }
 
       function ensureAdmin() {
-        return fetch('/api/session', { credentials: 'same-origin' })
+        var token = getToken();
+        if (!token) { window.location.href = 'index.html'; return Promise.resolve(false); }
+        return fetch('/api/session', { headers: authHeaders() })
           .then(function (r) { return r.json(); })
           .then(function (data) {
             if (!data || !data.loggedIn || !data.user || data.user.rol !== 'ADMIN') {
@@ -315,8 +327,8 @@
       }
 
       authButton.addEventListener('click', function () {
-        fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
-          .then(function () { window.location.href = 'index.html'; });
+        localStorage.removeItem('appencuesta.auth');
+        window.location.href = 'index.html';
       });
 
       searchInput.addEventListener('input', render);

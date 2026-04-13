@@ -1,88 +1,88 @@
-/**
- * Web Worker para sincronización de formularios vía WebSocket
- * Se ejecuta en background sin bloquear la UI
- */
+/* sync-worker.js — Web Worker para sincronizacion offline→online */
+/* Recibe: { type: 'SYNC', formularios: [...], token: '...', wsUrl: '...' } */
+/* Envia:  { type: 'SYNC_RESULT', result: {...} } | { type: 'SYNC_ERROR', message: '...' } */
 
-self.onmessage = function (event) {
-  var data = event.data;
-  var token = data.token;
-  var formularios = data.formularios;
-  var wsUrl = data.wsUrl || 'ws://localhost:8080/sync';
+(function () {
+  'use strict';
 
-  syncFormularios(token, formularios, wsUrl, function (success, result) {
-    // Enviar resultado de vuelta al hilo principal
-    self.postMessage({
-      success: success,
-      message: result
-    });
-  });
-};
+  var messageReceived = false;
+  var syncTimeout = null;
 
-function syncFormularios(token, formularios, wsUrl, callback) {
-  var ws;
+  self.onmessage = function (e) {
+    var data = e.data;
+    if (!data || data.type !== 'SYNC') return;
 
-  try {
-    ws = new WebSocket(wsUrl);
-  } catch (err) {
-    console.error('Error en Worker: no se pudo conectar a WebSocket:', err);
-    callback(false, 'No se pudo conectar al servidor de sincronización.');
-    return;
-  }
+    var formularios = data.formularios;
+    var token = data.token;
+    var wsUrl = data.wsUrl;
 
-  ws.onopen = function () {
-    console.log('Worker: conectado al WebSocket');
-    
-    // Enviar los formularios al servidor
-    var message = {
-      token: token,
-      action: 'sync',
-      formularios: formularios
-    };
-    
-    try {
-      ws.send(JSON.stringify(message));
-    } catch (err) {
-      console.error('Worker: error al enviar al WebSocket:', err);
-      callback(false, 'Error al enviar formularios.');
-      ws.close();
+    if (!formularios || !formularios.length || !token || !wsUrl) {
+      self.postMessage({ type: 'SYNC_ERROR', message: 'Parametros insuficientes para sincronizar.' });
+      return;
     }
-  };
 
-  ws.onmessage = function (event) {
-    console.log('Worker: mensaje recibido:', event.data);
+    var url = wsUrl + '?token=' + encodeURIComponent(token);
+    var ws;
+
     try {
-      var response = JSON.parse(event.data);
-      
-      if (response.success) {
-        console.log('Worker: sincronización exitosa');
-        callback(true, response.message || 'Sincronización completada');
-      } else {
-        console.log('Worker: error en respuesta del servidor');
-        callback(false, response.message || 'Error en la sincronización');
+      ws = new WebSocket(url);
+    } catch (err) {
+      self.postMessage({ type: 'SYNC_ERROR', message: 'No se pudo abrir WebSocket: ' + String(err) });
+      return;
+    }
+
+    messageReceived = false;
+
+    syncTimeout = setTimeout(function () {
+      if (!messageReceived) {
+        self.postMessage({ type: 'SYNC_ERROR', message: 'Timeout: el servidor no respondio en 10 segundos.' });
+        try { ws.close(); } catch (ignore) {}
       }
-    } catch (err) {
-      console.error('Worker: error al procesar respuesta:', err);
-      callback(false, 'Error al procesar respuesta del servidor');
-    } finally {
+    }, 10000);
+
+    ws.onopen = function () {
+      try {
+        ws.send(JSON.stringify(formularios));
+      } catch (err) {
+        clearTimeout(syncTimeout);
+        self.postMessage({ type: 'SYNC_ERROR', message: 'Error al enviar datos: ' + String(err) });
+        try { ws.close(); } catch (ignore) {}
+      }
+    };
+
+    ws.onmessage = function (event) {
+      messageReceived = true;
+      clearTimeout(syncTimeout);
+
+      var result;
+      try {
+        result = JSON.parse(event.data);
+      } catch (err) {
+        self.postMessage({ type: 'SYNC_ERROR', message: 'Respuesta del servidor no es JSON valido.' });
+        ws.close();
+        return;
+      }
+
+      self.postMessage({ type: 'SYNC_RESULT', result: result });
       ws.close();
-    }
-  };
+    };
 
-  ws.onerror = function (err) {
-    console.error('Worker: error en WebSocket:', err);
-    callback(false, 'Error de conexión con el servidor');
-  };
+    ws.onerror = function () {
+      if (!messageReceived) {
+        clearTimeout(syncTimeout);
+        self.postMessage({ type: 'SYNC_ERROR', message: 'Error de conexion WebSocket.' });
+      }
+    };
 
-  ws.onclose = function () {
-    console.log('Worker: conexión cerrada');
+    ws.onclose = function (event) {
+      if (!messageReceived) {
+        clearTimeout(syncTimeout);
+        var reason = event.reason ? (' Razon: ' + event.reason) : '';
+        self.postMessage({
+          type: 'SYNC_ERROR',
+          message: 'Conexion cerrada antes de recibir respuesta (code ' + event.code + ').' + reason
+        });
+      }
+    };
   };
-
-  // Timeout de 15 segundos
-  setTimeout(function () {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      console.log('Worker: timeout, cerrando conexión');
-      ws.close();
-      callback(false, 'Tiempo de espera agotado');
-    }
-  }, 15000);
-}
+})();
