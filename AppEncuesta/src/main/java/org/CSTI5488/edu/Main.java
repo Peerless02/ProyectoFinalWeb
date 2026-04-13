@@ -5,6 +5,7 @@ import io.javalin.http.staticfiles.Location;
 import org.CSTI5488.edu.controller.AuthController;
 import org.CSTI5488.edu.controller.FormularioController;
 import org.CSTI5488.edu.controller.SyncController;
+import org.CSTI5488.edu.controller.UsuarioController;
 import org.CSTI5488.edu.db.MongoConfig;
 import org.CSTI5488.edu.grpc.GrpcServer;
 import org.CSTI5488.edu.service.AuthService;
@@ -23,6 +24,7 @@ public class Main {
         AuthController authController = new AuthController(authService);
         FormularioController formularioController = new FormularioController(formularioService, authService);
         SyncController syncController = new SyncController(formularioService, authService);
+        UsuarioController usuarioController = new UsuarioController(authService);
 
         Javalin app = Javalin.create(config -> {
             // Servir archivos estaticos desde src/main/resources/public
@@ -55,6 +57,7 @@ public class Main {
         authController.registerRoutes(app);
         formularioController.registerRoutes(app);
         syncController.registerRoutes(app);
+        usuarioController.registerRoutes(app);
 
         GrpcServer grpcServer = new GrpcServer(formularioService, Integer.parseInt(grpcPuerto));
         grpcServer.start();

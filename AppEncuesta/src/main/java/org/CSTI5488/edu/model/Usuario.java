@@ -13,6 +13,7 @@ public class Usuario implements Serializable {
     private String password;
     private String nombre;
     private String rol;
+    private boolean bloqueado;
 
     public Usuario() {
     }
@@ -23,6 +24,7 @@ public class Usuario implements Serializable {
         this.password = password;
         this.nombre = nombre;
         this.rol = rol;
+        this.bloqueado = false;
     }
 
     public String getId() {
@@ -63,5 +65,13 @@ public class Usuario implements Serializable {
 
     public void setRol(String rol) {
         this.rol = rol;
+    }
+
+    public boolean isBloqueado() {
+        return bloqueado;
+    }
+
+    public void setBloqueado(boolean bloqueado) {
+        this.bloqueado = bloqueado;
     }
 }
