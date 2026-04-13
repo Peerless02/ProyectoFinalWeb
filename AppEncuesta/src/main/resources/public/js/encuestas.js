@@ -1,4 +1,4 @@
-/* global Formulario */
+/* global Formulario, Webcam */
 
 (function () {
   'use strict';
@@ -468,38 +468,101 @@
     var form = $('formulario-form');
     if (!form) return;
 
-    var photoInput = $('form-foto');
     var photoPreview = $('form-foto-preview');
     var photoBase64 = $('form-foto-base64');
     var geoBtn = $('form-geo-btn');
 
-    if (photoInput) {
-      photoInput.addEventListener('change', function () {
+    // Webcam-easy integration
+    var webcamVideo = $('webcam');
+    var webcamCanvas = $('webcam-canvas');
+    var webcamStartBtn = $('webcam-start-btn');
+    var webcamCaptureBtn = $('webcam-capture-btn');
+    var webcamSwitchBtn = $('webcam-switch-btn');
+    var webcamRetakeBtn = $('webcam-retake-btn');
+    var webcamClearBtn = $('webcam-clear-btn');
+    var webcamInstance = null;
+
+    function getWebcam() {
+      if (!webcamInstance && webcamVideo && webcamCanvas) {
+        webcamInstance = new Webcam(webcamVideo, 'user', webcamCanvas);
+      }
+      return webcamInstance;
+    }
+
+    if (webcamStartBtn) {
+      webcamStartBtn.addEventListener('click', function () {
         setText($('form-photo-msg'), '');
-        if (!photoInput.files || photoInput.files.length === 0) {
-          if (photoBase64) photoBase64.value = '';
-          if (photoPreview) show(photoPreview, false);
-          return;
+        var wc = getWebcam();
+        if (!wc) return;
+        wc.start()
+          .then(function () {
+            show(webcamVideo, true);
+            show(webcamStartBtn, false);
+            show(webcamCaptureBtn, true);
+            show(webcamSwitchBtn, true);
+          })
+          .catch(function (err) {
+            setText($('form-photo-msg'), 'No se pudo acceder a la cámara: ' + (err && err.message ? err.message : err));
+          });
+      });
+    }
+
+    if (webcamCaptureBtn) {
+      webcamCaptureBtn.addEventListener('click', function () {
+        var wc = getWebcam();
+        if (!wc) return;
+        var picture = wc.snap();
+        wc.stop();
+        if (photoBase64) photoBase64.value = picture;
+        if (photoPreview) {
+          photoPreview.src = picture;
+          show(photoPreview, true);
         }
-        var file = photoInput.files[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-          setText($('form-photo-msg'), 'La foto supera 2MB. Usa una imagen mas pequena.');
-          if (photoBase64) photoBase64.value = '';
-          if (photoPreview) show(photoPreview, false);
-          return;
-        }
-        var reader = new FileReader();
-        reader.onload = function () {
-          var result = reader.result;
-          if (typeof result !== 'string') return;
-          if (photoBase64) photoBase64.value = result;
-          if (photoPreview) {
-            photoPreview.src = result;
-            show(photoPreview, true);
-          }
-        };
-        reader.readAsDataURL(file);
+        show(webcamVideo, false);
+        show(webcamCaptureBtn, false);
+        show(webcamSwitchBtn, false);
+        show(webcamRetakeBtn, true);
+        show(webcamClearBtn, true);
+        setText($('form-photo-msg'), '');
+      });
+    }
+
+    if (webcamSwitchBtn) {
+      webcamSwitchBtn.addEventListener('click', function () {
+        var wc = getWebcam();
+        if (wc) wc.flip();
+      });
+    }
+
+    if (webcamRetakeBtn) {
+      webcamRetakeBtn.addEventListener('click', function () {
+        if (photoBase64) photoBase64.value = '';
+        show(photoPreview, false);
+        show(webcamRetakeBtn, false);
+        show(webcamClearBtn, false);
+        var wc = getWebcam();
+        if (!wc) return;
+        wc.start()
+          .then(function () {
+            show(webcamVideo, true);
+            show(webcamCaptureBtn, true);
+            show(webcamSwitchBtn, true);
+          })
+          .catch(function (err) {
+            setText($('form-photo-msg'), 'No se pudo acceder a la cámara: ' + (err && err.message ? err.message : err));
+            show(webcamStartBtn, true);
+          });
+      });
+    }
+
+    if (webcamClearBtn) {
+      webcamClearBtn.addEventListener('click', function () {
+        if (photoBase64) photoBase64.value = '';
+        show(photoPreview, false);
+        show(webcamRetakeBtn, false);
+        show(webcamClearBtn, false);
+        show(webcamStartBtn, true);
+        setText($('form-photo-msg'), '');
       });
     }
 
