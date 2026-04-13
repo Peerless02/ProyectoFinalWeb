@@ -36,6 +36,8 @@
               <li><a href="index.html">Inicio</a></li>
               <li class="active"><a href="crear-encuesta.html">Nueva encuesta</a></li>
               <li><a href="index.html#mu-formulario-list">Mis encuestas</a></li>
+              <li id="nav-usuarios" style="display:none;"><a href="usuarios.html">Usuarios</a></li>
+              <li id="nav-plantillas" style="display:none;"><a href="admin-plantillas.html">Plantillas</a></li>
             </ul>
           </div>
 
@@ -183,5 +185,60 @@
     <!-- App -->
     <script src="js/models.js"></script>
     <script src="js/encuestas.js"></script>
+
+    <!-- Navbar role-based visibility -->
+    <script>
+    (function() {
+      function b64UrlDecode(s) {
+        var b64 = String(s).replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        try {
+          return new TextDecoder('utf-8').decode(bytes);
+        } catch (e) {
+          return bin;
+        }
+      }
+
+      function parseJwt(token) {
+        try {
+          var parts = String(token).split('.');
+          if (parts.length < 2) return null;
+          return JSON.parse(b64UrlDecode(parts[1]));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function getAuth() {
+        try {
+          var raw = localStorage.getItem('appencuesta.auth');
+          if (!raw) return null;
+          var a = JSON.parse(raw);
+          if (!a || !a.token) return null;
+          var payload = parseJwt(a.token);
+          if (!payload) return null;
+          return {
+            token: a.token,
+            rol: payload.rol || null
+          };
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Check role and show/hide admin links
+      var auth = getAuth();
+      var navUsuarios = document.getElementById('nav-usuarios');
+      var navPlantillas = document.getElementById('nav-plantillas');
+      
+      if (auth && auth.rol === 'ADMIN') {
+        if (navUsuarios) navUsuarios.style.display = '';
+        if (navPlantillas) navPlantillas.style.display = '';
+      }
+    })();
+    </script>
   </body>
 </html>
