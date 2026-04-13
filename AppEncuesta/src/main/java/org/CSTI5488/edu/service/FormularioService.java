@@ -24,4 +24,8 @@ public class FormularioService {
     public List<Formulario> listarPorUsuario(String username) {
         return formularioRepository.findByUsuario(username);
     }
+
+    public List<Formulario> listarConCoordenadas() {
+        return formularioRepository.findWithCoords();
+    }
 }
