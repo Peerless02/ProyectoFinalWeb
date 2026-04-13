@@ -6,7 +6,7 @@ services:
     ports:
       - "7070:7070"
     environment:
-      - MONGO_URL=mongodb+srv://<usuario>:<password>@cluster0.abc.mongodb.net/test?retryWrites=true&w=majority
+      - MONGO_URL=mongodb+srv://agtr0002_db_user:BW2gyZZiFwcJELug@appencuesta.jycbqks.mongodb.net/?appName=AppEncuesta
       - JWT_SECRET=SecretoSuperSeguroParaElProyectoFinal
       - PUERTO=7070
     networks:

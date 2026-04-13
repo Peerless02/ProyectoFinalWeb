@@ -138,10 +138,13 @@
     var gate = $('auth-gate');
     if (gate) show(gate, !auth);
 
+    var formularioForm = $('formulario-form');
+    if (formularioForm) show(formularioForm, !!auth);
+
     var createWrap = $('mu-formulario-create');
-    if (createWrap) show(createWrap, !!auth);
+    if (createWrap) show(createWrap, true);
     var listWrap = $('mu-formulario-list');
-    if (listWrap) show(listWrap, !!auth);
+    if (listWrap) show(listWrap, true);
   }
 
   function renderList() {
@@ -198,22 +201,44 @@
   }
 
   function showLoginModal() {
-    if (window.$ && $('#authModal').modal) {
-      $('#authModal').modal('show');
-      return;
+    var m = document.getElementById('authModal');
+    if (!m) return;
+    // Limpiar error anterior
+    setLoginError('');
+    try {
+      if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+        window.jQuery('#authModal').modal('show');
+      } else {
+        // Fallback manual Bootstrap 3: agregar clases y backdrop
+        m.style.display = 'block';
+        m.classList.add('in');
+        document.body.classList.add('modal-open');
+        var bd = document.createElement('div');
+        bd.className = 'modal-backdrop fade in';
+        bd.id = 'authModalBackdrop';
+        document.body.appendChild(bd);
+      }
+    } catch (e) {
+      m.style.display = 'block';
     }
-    // Fallback sin jQuery: mostrar el bloque.
-    var modal = $('authModal');
-    if (modal) modal.style.display = 'block';
   }
 
   function hideLoginModal() {
-    if (window.$ && $('#authModal').modal) {
-      $('#authModal').modal('hide');
-      return;
+    var m = document.getElementById('authModal');
+    if (!m) return;
+    try {
+      if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+        window.jQuery('#authModal').modal('hide');
+      } else {
+        m.style.display = 'none';
+        m.classList.remove('in');
+        document.body.classList.remove('modal-open');
+        var bd = document.getElementById('authModalBackdrop');
+        if (bd) bd.remove();
+      }
+    } catch (e) {
+      m.style.display = 'none';
     }
-    var modal = $('authModal');
-    if (modal) modal.style.display = 'none';
   }
 
   function setLoginError(msg) {
@@ -275,8 +300,7 @@
         login(username, password)
           .then(function () {
             hideLoginModal();
-            renderAuth();
-            renderList();
+            window.location.reload();
           })
           .catch(function (err) {
             setLoginError(err && err.message ? err.message : 'No se pudo iniciar sesion.');
@@ -489,4 +513,3 @@
     renderList();
   });
 })();
-
