@@ -23,6 +23,7 @@ public class FormularioController {
     public void registerRoutes(Javalin app) {
         app.unsafe.routes.post("/api/formularios", this::crear);
         app.unsafe.routes.get("/api/formularios/usuario/{username}", this::listarPorUsuario);
+        app.unsafe.routes.get("/api/formularios/mapa", this::listarMapa);
     }
 
     private DecodedJWT validarToken(Context ctx) {
@@ -56,6 +57,13 @@ public class FormularioController {
 
         String username = ctx.pathParam("username");
         List<Formulario> formularios = formularioService.listarPorUsuario(username);
+        ctx.json(formularios);
+    }
+
+    private void listarMapa(Context ctx) {
+        if (validarToken(ctx) == null) return;
+
+        List<Formulario> formularios = formularioService.listarConCoordenadas();
         ctx.json(formularios);
     }
 }
