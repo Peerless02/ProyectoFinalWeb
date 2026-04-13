@@ -125,7 +125,7 @@ print("Indices de 'formularios' creados.");
 //   https://bcrypt-generator.com  (rounds = 10)
 // O registra el usuario desde la app y copia el hash de Atlas.
 // -----------------------------------------------------------------------------
-const adminHash = "$2a$10$7EqJtq98hPqEX7fNZaFWoOe4p2NQjFkNBPSHjHpJBwqGlxF5zYOQa";  // Admin123!
+const adminHash = "$2a$10$SoW7IeTtwHDbb7X.72myWuOzNVpr7QJwyb57OfiwKIKb1ItkKJS3e";  // Admin123!
 
 const usuariosSeed = [
     {
