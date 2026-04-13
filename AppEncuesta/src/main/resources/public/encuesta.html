@@ -34,8 +34,8 @@
           <div class="collapse navbar-collapse" id="nav-create">
             <ul class="nav navbar-nav mu-menu navbar-right">
               <li><a href="index.html">Inicio</a></li>
-              <li class="active"><a href="crear-evento.html">Registrar encuesta</a></li>
-              <li><a href="admin-plantillas.html">Admin plantillas</a></li>
+              <li class="active"><a href="encuesta.html">Registrar encuesta</a></li>
+              <li><a href="index.html#mu-formulario-list">Mis encuestas</a></li>
             </ul>
           </div>
 
@@ -188,7 +188,7 @@
       </div>
     </div>
 
-    <!-- Vendor -->
+    <!-- Vendor (Bootstrap 3 requiere jQuery) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
 
@@ -204,8 +204,16 @@
         var fotoBase64 = null;
 
         function $(id) { return document.getElementById(id); }
-        function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
-        function setText(el, txt) { if (el) el.textContent = (txt == null) ? '' : String(txt); }
+
+        function show(el, on) {
+          if (!el) return;
+          el.style.display = on ? '' : 'none';
+        }
+
+        function setText(el, txt) {
+          if (!el) return;
+          el.textContent = txt == null ? '' : String(txt);
+        }
 
         function b64UrlDecode(s) {
           var b64 = String(s).replace(/-/g, '+').replace(/_/g, '/');
@@ -229,6 +237,7 @@
         function nowSeconds() { return Math.floor(Date.now() / 1000); }
 
         function getAuthTokenRaw() {
+          // Primary: same storage as the rest of the app (encuestas.js).
           try {
             var raw = localStorage.getItem(LS_AUTH);
             if (raw) {
@@ -236,7 +245,15 @@
               if (obj && obj.token) return obj.token;
             }
           } catch (e) {}
-          return localStorage.getItem('token') || null;
+
+          // Fallbacks (if another page stored it differently).
+          var direct = localStorage.getItem('token');
+          return direct || null;
+        }
+
+        function clearAuth() {
+          localStorage.removeItem(LS_AUTH);
+          localStorage.removeItem('token');
         }
 
         function getAuth() {
@@ -245,18 +262,35 @@
           var payload = parseJwt(token);
           if (!payload || !payload.sub) return null;
           if (payload.exp && payload.exp <= nowSeconds()) return null;
-          return { token: token, username: payload.sub, rol: payload.rol || payload.role || null };
+          return { token: token, username: payload.sub, rol: payload.rol || payload.role || null, exp: payload.exp || null };
         }
 
-        function setAuth(token) { localStorage.setItem(LS_AUTH, JSON.stringify({ token: token })); }
-        function clearAuth() { localStorage.removeItem(LS_AUTH); localStorage.removeItem('token'); }
+        function setAuth(token) {
+          localStorage.setItem(LS_AUTH, JSON.stringify({ token: token }));
+        }
 
-        function showLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('show'); } }
-        function hideLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('hide'); } }
+        function showLoginModal() {
+          if (window.$ && $('#authModal').modal) {
+            $('#authModal').modal('show');
+            return;
+          }
+          var modal = $('authModal');
+          if (modal) modal.style.display = 'block';
+        }
+
+        function hideLoginModal() {
+          if (window.$ && $('#authModal').modal) {
+            $('#authModal').modal('hide');
+            return;
+          }
+          var modal = $('authModal');
+          if (modal) modal.style.display = 'none';
+        }
 
         function setLoginError(msg) {
-          setText($('auth-error'), msg || '');
-          show($('auth-error'), !!msg);
+          var el = $('auth-error');
+          setText(el, msg || '');
+          show(el, !!msg);
         }
 
         function login(username, password) {
@@ -276,52 +310,67 @@
           });
         }
 
-        function setFormError(msg) {
-          setText($('form-error'), msg || '');
-          show($('form-error'), !!msg);
-        }
-
-        function setFormSuccess(msg) {
-          setText($('form-success'), msg || '');
-          show($('form-success'), !!msg);
-        }
-
-        function apiFetch(path, opts) {
-          var auth = getAuth();
-          if (!auth) return Promise.reject(new Error('No autenticado'));
-          opts = opts || {};
-          opts.headers = opts.headers || {};
-          opts.headers['Authorization'] = 'Bearer ' + auth.token;
-          return fetch(path, opts).then(function (r) {
-            if (!r.ok) {
-              return r.json().catch(function () { return {}; }).then(function (d) {
-                var msg = (d && d.error) ? d.error : ('Error (' + r.status + ')');
-                var err = new Error(msg);
-                err.status = r.status;
-                throw err;
-              });
-            }
-            return r.json().catch(function () { return {}; });
-          });
-        }
-
         function renderAuth() {
           var auth = getAuth();
           var btn = $('auth-button');
           var badge = $('auth-badge');
+
           if (btn) btn.textContent = auth ? 'Log out' : 'Log in';
           if (badge) {
             show(badge, !!auth);
             if (auth) setText(badge, auth.username + (auth.rol ? (' (' + auth.rol + ')') : ''));
           }
 
-          show($('auth-gate'), !auth);
-          show($('mu-formulario-create'), !!auth);
+          var gate = $('auth-gate');
+          if (gate) show(gate, !auth);
 
-          $('form-usuarioRegistro').value = auth ? auth.username : '';
+          var createWrap = $('mu-formulario-create');
+          if (createWrap) show(createWrap, !!auth);
+
+          var userHidden = $('form-usuarioRegistro');
+          if (userHidden) userHidden.value = auth ? auth.username : '';
+        }
+
+        function readPendientes() {
+          try {
+            var raw = localStorage.getItem(LS_PENDIENTES);
+            var arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr : [];
+          } catch (e) {
+            return [];
+          }
+        }
+
+        function writePendientes(arr) {
+          localStorage.setItem(LS_PENDIENTES, JSON.stringify(arr || []));
+        }
+
+        function hasNoSincronizados() {
+          var arr = readPendientes();
+          for (var i = 0; i < arr.length; i++) {
+            if (!arr[i] || arr[i].sincronizado !== true) return true;
+          }
+          return false;
+        }
+
+        function refreshSyncButton() {
+          show($('sync-pendientes'), hasNoSincronizados());
+        }
+
+        function setFormError(msg) {
+          var el = $('form-error');
+          setText(el, msg || '');
+          show(el, !!msg);
+        }
+
+        function setFormSuccess(msg) {
+          var el = $('form-success');
+          setText(el, msg || '');
+          show(el, !!msg);
         }
 
         function gpsSetStatus(txt, kind) {
+          // kind: 'ok' | 'warn' | null
           var el = $('gps-status');
           if (!el) return;
           setText(el, txt);
@@ -398,182 +447,6 @@
           });
         }
 
-        function readPendientes() {
-          try {
-            var raw = localStorage.getItem(LS_PENDIENTES);
-            var arr = raw ? JSON.parse(raw) : [];
-            return Array.isArray(arr) ? arr : [];
-          } catch (e) {
-            return [];
-          }
-        }
-
-        function writePendientes(arr) {
-          localStorage.setItem(LS_PENDIENTES, JSON.stringify(arr || []));
-        }
-
-        function hasNoSincronizados() {
-          var arr = readPendientes();
-          for (var i = 0; i < arr.length; i++) {
-            if (!arr[i] || arr[i].sincronizado !== true) return true;
-          }
-          return false;
-        }
-
-        function refreshSyncButton() {
-          show($('sync-pendientes'), hasNoSincronizados());
-        }
-
-        function clearCamposExtraUI() {
-          var wrap = $('campos-extra');
-          if (wrap) wrap.innerHTML = '';
-        }
-
-        function renderCamposExtra(campos) {
-          var wrap = $('campos-extra');
-          if (!wrap) return;
-
-          wrap.innerHTML = '';
-
-          if (!campos || !Array.isArray(campos) || campos.length === 0) return;
-
-          var sorted = campos.slice().sort(function (a, b) { return (a.orden || 0) - (b.orden || 0); });
-          for (var i = 0; i < sorted.length; i++) {
-            var c = sorted[i] || {};
-            if (!c.id || !c.label || !c.tipo) continue;
-
-            var tipo = String(c.tipo);
-            var id = String(c.id);
-            var requiredAttr = c.requerido ? ' required' : '';
-            var html = '';
-
-            if (tipo === 'checkbox') {
-              html = '<div class="checkbox" data-campo-id="' + id + '" data-campo-tipo="' + tipo + '">'
-                + '<label>'
-                + '<input type="checkbox" id="extra-' + id + '"' + requiredAttr + '> ' + escapeHtml(c.label)
-                + '</label>'
-                + '</div>';
-              wrap.insertAdjacentHTML('beforeend', html);
-              continue;
-            }
-
-            if (tipo === 'textarea') {
-              html = '<div class="form-group" data-campo-id="' + id + '" data-campo-tipo="' + tipo + '">'
-                + '<label for="extra-' + id + '">' + escapeHtml(c.label) + '</label>'
-                + '<textarea class="form-control" id="extra-' + id + '"' + requiredAttr + ' rows="3"></textarea>'
-                + '</div>';
-              wrap.insertAdjacentHTML('beforeend', html);
-              continue;
-            }
-
-            if (tipo === 'select') {
-              var ops = (c.opciones && Array.isArray(c.opciones)) ? c.opciones : [];
-              var optHtml = '<option value="">Selecciona...</option>';
-              for (var j = 0; j < ops.length; j++) {
-                var o = (ops[j] == null) ? '' : String(ops[j]);
-                optHtml += '<option value="' + escapeHtmlAttr(o) + '">' + escapeHtml(o) + '</option>';
-              }
-              html = '<div class="form-group" data-campo-id="' + id + '" data-campo-tipo="' + tipo + '">'
-                + '<label for="extra-' + id + '">' + escapeHtml(c.label) + '</label>'
-                + '<select class="form-control" id="extra-' + id + '"' + requiredAttr + '>' + optHtml + '</select>'
-                + '</div>';
-              wrap.insertAdjacentHTML('beforeend', html);
-              continue;
-            }
-
-            if (tipo === 'number') {
-              html = '<div class="form-group" data-campo-id="' + id + '" data-campo-tipo="' + tipo + '">'
-                + '<label for="extra-' + id + '">' + escapeHtml(c.label) + '</label>'
-                + '<input type="number" class="form-control" id="extra-' + id + '" step="any"' + requiredAttr + '>'
-                + '</div>';
-              wrap.insertAdjacentHTML('beforeend', html);
-              continue;
-            }
-
-            if (tipo === 'date') {
-              html = '<div class="form-group" data-campo-id="' + id + '" data-campo-tipo="' + tipo + '">'
-                + '<label for="extra-' + id + '">' + escapeHtml(c.label) + '</label>'
-                + '<input type="date" class="form-control" id="extra-' + id + '"' + requiredAttr + '>'
-                + '</div>';
-              wrap.insertAdjacentHTML('beforeend', html);
-              continue;
-            }
-
-            // default: text
-            html = '<div class="form-group" data-campo-id="' + id + '" data-campo-tipo="text">'
-              + '<label for="extra-' + id + '">' + escapeHtml(c.label) + '</label>'
-              + '<input type="text" class="form-control" id="extra-' + id + '"' + requiredAttr + '>'
-              + '</div>';
-            wrap.insertAdjacentHTML('beforeend', html);
-          }
-        }
-
-        function escapeHtml(s) {
-          return String(s == null ? '' : s)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-        }
-
-        function escapeHtmlAttr(s) {
-          return escapeHtml(s).replace(/\n/g, ' ').replace(/\r/g, ' ');
-        }
-
-        function loadDefaultPlantilla() {
-          var auth = getAuth();
-          if (!auth) {
-            clearCamposExtraUI();
-            return Promise.resolve();
-          }
-          return apiFetch('/api/plantillas').then(function (arr) {
-            if (!Array.isArray(arr)) return;
-            var def = null;
-            for (var i = 0; i < arr.length; i++) {
-              if (arr[i] && arr[i].esDefault) { def = arr[i]; break; }
-            }
-            if (!def || !def.camposExtra) {
-              clearCamposExtraUI();
-              return;
-            }
-            renderCamposExtra(def.camposExtra);
-          }).catch(function () {
-            // Si falla, se cargan solo los campos fijos.
-            clearCamposExtraUI();
-          });
-        }
-
-        function readCamposExtraValues() {
-          var wrap = $('campos-extra');
-          var out = {};
-          if (!wrap) return out;
-
-          var nodes = wrap.querySelectorAll('[data-campo-id]');
-          for (var i = 0; i < nodes.length; i++) {
-            var n = nodes[i];
-            var cid = n.getAttribute('data-campo-id');
-            var tipo = n.getAttribute('data-campo-tipo') || 'text';
-            if (!cid) continue;
-
-            var input = $('extra-' + cid);
-            if (!input) continue;
-
-            if (tipo === 'checkbox') {
-              out[cid] = !!input.checked;
-              continue;
-            }
-            if (tipo === 'number') {
-              var v = String(input.value || '').trim();
-              out[cid] = v === '' ? null : Number(v);
-              continue;
-            }
-            var val = String(input.value || '').trim();
-            out[cid] = val === '' ? null : val;
-          }
-          return out;
-        }
-
         function buildPayload() {
           var auth = getAuth();
           if (!auth) return null;
@@ -588,11 +461,11 @@
             nombre: nombre,
             sector: sector,
             nivelEscolar: nivel,
-            usuarioRegistro: auth.username,
+            usuarioRegistro: auth.username, // JWT claim "sub"
             latitud: (typeof gpsLat === 'number') ? gpsLat : null,
             longitud: (typeof gpsLng === 'number') ? gpsLng : null,
             fotoBase64: (typeof fotoBase64 === 'string' && fotoBase64) ? fotoBase64 : null,
-            camposExtra: readCamposExtraValues()
+            camposExtra: {}
           };
         }
 
@@ -667,6 +540,7 @@
           var failCount = 0;
           var lastErr = null;
 
+          // Sync sequentially to avoid bursts and to keep behavior predictable offline.
           var chain = Promise.resolve();
           pend.forEach(function (item) {
             chain = chain.then(function () {
@@ -676,23 +550,24 @@
               }).catch(function (err) {
                 failCount++;
                 lastErr = err || lastErr;
+                // Stop on first failure to keep behavior predictable (offline or auth/server errors).
                 throw err || new Error('sync-stop');
               });
             });
           });
 
           return chain.catch(function () {
+            // ignore; message below
           }).finally(function () {
             if (btn) btn.disabled = false;
             refreshSyncButton();
-
             if (okCount > 0 && failCount === 0) {
               setFormSuccess('Sincronizacion completa. (' + okCount + ')');
               setTimeout(function () { show($('form-success'), false); }, 2500);
-              return;
-            }
-
-            if (failCount > 0) {
+            } else if (okCount > 0 && failCount > 0) {
+              setFormSuccess('Sincronizado parcialmente. (' + okCount + ') Pendientes aun sin conexion.');
+              setTimeout(function () { show($('form-success'), false); }, 3500);
+            } else if (failCount > 0) {
               if (lastErr && typeof lastErr.status === 'number') {
                 if (lastErr.status === 401 || lastErr.status === 403) {
                   setFormError('Necesitas iniciar sesion nuevamente para sincronizar.');
@@ -717,7 +592,6 @@
               var auth = getAuth();
               if (auth) {
                 clearAuth();
-                clearCamposExtraUI();
                 renderAuth();
                 showLoginModal();
                 return;
@@ -731,19 +605,27 @@
             loginForm.addEventListener('submit', function (e) {
               e.preventDefault();
               setLoginError('');
-              var username = $('login-username').value.trim();
-              var password = $('login-password').value;
-              if (!username || !password) { setLoginError('Completa usuario y contrasena.'); return; }
-              $('login-submit').disabled = true;
-              login(username, password).then(function () {
-                hideLoginModal();
-                renderAuth();
-                return loadDefaultPlantilla();
-              }).catch(function (err) {
-                setLoginError(err && err.message ? err.message : 'No se pudo iniciar sesion.');
-              }).finally(function () {
-                $('login-submit').disabled = false;
-              });
+              var u = $('login-username');
+              var p = $('login-password');
+              var username = u ? u.value.trim() : '';
+              var password = p ? p.value : '';
+              if (!username || !password) {
+                setLoginError('Completa usuario y contrasena.');
+                return;
+              }
+              var btn = $('login-submit');
+              if (btn) btn.disabled = true;
+              login(username, password)
+                .then(function () {
+                  hideLoginModal();
+                  renderAuth();
+                })
+                .catch(function (err) {
+                  setLoginError(err && err.message ? err.message : 'No se pudo iniciar sesion.');
+                })
+                .finally(function () {
+                  if (btn) btn.disabled = false;
+                });
             });
           }
         }
@@ -795,9 +677,10 @@
               return;
             }
 
+            // Requerimiento #8: guardar local antes de sincronizar.
             var pending = savePending(payload);
 
-            var submitBtn = form.querySelector('button[type=\"submit\"]');
+            var submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.disabled = true;
 
             postFormulario(payload).then(function (serverData) {
@@ -805,6 +688,7 @@
               setFormSuccess('Encuesta sincronizada.');
               setTimeout(function () { show($('form-success'), false); }, 2500);
             }).catch(function (err) {
+              // Si es un error HTTP (servidor respondio), mostrarlo. Si es offline, mensaje de sincronizacion.
               if (err && typeof err.status === 'number') {
                 setFormError((err.message || 'No se pudo sincronizar ahora.') + ' Se guardo localmente como pendiente.');
               } else {
@@ -822,6 +706,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+          // If auth is invalid/expired, drop it.
           if (!getAuth()) clearAuth();
 
           wireAuth();
@@ -838,9 +723,7 @@
           refreshSyncButton();
           startGps();
 
-          if (getAuth()) {
-            loadDefaultPlantilla();
-          } else {
+          if (!getAuth()) {
             showLoginModal();
           }
         });

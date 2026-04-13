@@ -4,12 +4,14 @@ import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import org.CSTI5488.edu.controller.AuthController;
 import org.CSTI5488.edu.controller.FormularioController;
+import org.CSTI5488.edu.controller.PlantillaController;
 import org.CSTI5488.edu.controller.SyncController;
 import org.CSTI5488.edu.controller.UsuarioController;
 import org.CSTI5488.edu.db.MongoConfig;
 import org.CSTI5488.edu.grpc.GrpcServer;
 import org.CSTI5488.edu.service.AuthService;
 import org.CSTI5488.edu.service.FormularioService;
+import org.CSTI5488.edu.service.PlantillaService;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -20,9 +22,11 @@ public class Main {
 
         AuthService authService = new AuthService();
         FormularioService formularioService = new FormularioService();
+        PlantillaService plantillaService = new PlantillaService();
 
         AuthController authController = new AuthController(authService);
         FormularioController formularioController = new FormularioController(formularioService, authService);
+        PlantillaController plantillaController = new PlantillaController(plantillaService, authService);
         SyncController syncController = new SyncController(formularioService, authService);
         UsuarioController usuarioController = new UsuarioController(authService);
 
@@ -56,6 +60,7 @@ public class Main {
 
         authController.registerRoutes(app);
         formularioController.registerRoutes(app);
+        plantillaController.registerRoutes(app);
         syncController.registerRoutes(app);
         usuarioController.registerRoutes(app);
 

@@ -34,13 +34,19 @@
           <div class="collapse navbar-collapse" id="nav-users">
             <ul class="nav navbar-nav mu-menu navbar-right">
               <li><a href="index.html">Inicio</a></li>
+              <li><a href="crear-encuesta.html">Nueva encuesta</a></li>
+              <li><a href="index.html#mu-formulario-list">Mis encuestas</a></li>
               <li class="active"><a href="usuarios.html">Usuarios</a></li>
+              <li id="nav-plantillas" style="display:none;"><a href="admin-plantillas.html">Plantillas</a></li>
             </ul>
           </div>
 
           <!-- Always-visible auth link (also visible on mobile without opening the menu) -->
-          <ul class="nav navbar-nav mu-menu navbar-right" style="margin-right: 0;">
-            <li><a href="javascript:void(0)" id="auth-button">Log out</a></li>
+          <ul class="nav navbar-nav navbar-right" style="margin-right: 0;">
+            <li style="padding: 15px 10px;">
+              <span id="auth-badge" class="label label-default" style="display:none"></span>
+            </li>
+            <li><a href="javascript:void(0)" id="auth-button">Log in</a></li>
           </ul>
         </div>
       </nav>
@@ -81,7 +87,7 @@
               <div class="form-group">
                 <select class="form-control" id="role-filter">
                   <option value="">Todos los roles</option>
-                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="ADMIN">ADMIN</option>
                   <option value="ESTUDIANTE">ESTUDIANTE</option>
                   <option value="ORGANIZADOR">ORGANIZADOR</option>
                   <option value="__NULL__">SIN ROL</option>
@@ -150,7 +156,7 @@
               <div class="form-group">
                 <label for="cu-role">Rol</label>
                 <select class="form-control" id="cu-role" name="rol" required>
-                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="ADMIN">ADMIN</option>
                   <option value="ESTUDIANTE">ESTUDIANTE</option>
                   <option value="ORGANIZADOR">ORGANIZADOR</option>
                 </select>
@@ -252,7 +258,7 @@
 
           var roleOptions = [
             { v: '', t: 'SIN ROL' },
-            { v: 'ADMINISTRADOR', t: 'ADMINISTRADOR' },
+            { v: 'ADMIN', t: 'ADMIN' },
             { v: 'ESTUDIANTE', t: 'ESTUDIANTE' },
             { v: 'ORGANIZADOR', t: 'ORGANIZADOR' }
           ].map(function (opt) {
@@ -308,8 +314,7 @@
         return fetch('/api/session', { headers: authHeaders() })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            var rol = data && data.user && data.user.rol;
-            if (!data || !data.loggedIn || (rol !== 'ADMINISTRADOR' && rol !== 'ADMIN')) {
+            if (!data || !data.loggedIn || !data.user || data.user.rol !== 'ADMIN') {
               window.location.href = 'index.html';
               return false;
             }
@@ -434,5 +439,91 @@
       });
     })();
     </script>
+
+    <!-- Navbar role-based visibility -->
+    <script>
+    (function() {
+      function b64UrlDecode(s) {
+        var b64 = String(s).replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        try {
+          return new TextDecoder('utf-8').decode(bytes);
+        } catch (e) {
+          return bin;
+        }
+      }
+
+      function parseJwt(token) {
+        try {
+          var parts = String(token).split('.');
+          if (parts.length < 2) return null;
+          return JSON.parse(b64UrlDecode(parts[1]));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function getAuthNav() {
+        try {
+          var raw = localStorage.getItem('appencuesta.auth');
+          if (!raw) return null;
+          var a = JSON.parse(raw);
+          if (!a || !a.token) return null;
+          var payload = parseJwt(a.token);
+          if (!payload) return null;
+          return {
+            token: a.token,
+            rol: payload.rol || null
+          };
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Check role and show/hide admin links
+      var auth = getAuthNav();
+      var navPlantillas = document.getElementById('nav-plantillas');
+      
+      if (auth && auth.rol === 'ADMIN') {
+        if (navPlantillas) navPlantillas.style.display = '';
+      }
+    })();
+    </script>
+
+    <!-- Auth modal -->
+    <div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="authModalLabel">Iniciar sesion</h4>
+          </div>
+          <div class="modal-body">
+            <div id="auth-error" class="alert alert-danger" style="display:none"></div>
+            <form id="login-form">
+              <div class="form-group">
+                <label for="login-username">Usuario</label>
+                <input type="text" class="form-control" id="login-username" autocomplete="username" required>
+              </div>
+              <div class="form-group">
+                <label for="login-password">Contrasena</label>
+                <input type="password" class="form-control" id="login-password" autocomplete="current-password" required>
+              </div>
+              <button id="login-submit" type="submit" class="btn btn-primary">
+                <i class="fa fa-sign-in"></i> Entrar
+              </button>
+            </form>
+            <p class="text-muted" style="margin-top:10px;">
+              Endpoint: <code>POST /api/auth/login</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

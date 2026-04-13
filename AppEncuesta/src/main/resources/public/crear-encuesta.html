@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AppEncuesta : Nueva encuesta</title>
+
+    <link rel="shortcut icon" type="image/icon" href="images/favicon.ico"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/slick.css" rel="stylesheet">
+    <link id="switcher" href="assets/css/theme-color/default-theme.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,400i,600,700,800" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+  </head>
+
+  <body>
+    <header id="mu-hero" role="banner">
+      <nav class="navbar navbar-fixed-top navbar-default mu-navbar">
+        <div class="container">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-create" aria-expanded="false">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">AppEncuesta</a>
+          </div>
+
+          <div class="collapse navbar-collapse" id="nav-create">
+            <ul class="nav navbar-nav mu-menu navbar-right">
+              <li><a href="index.html">Inicio</a></li>
+              <li class="active"><a href="crear-encuesta.html">Nueva encuesta</a></li>
+              <li><a href="index.html#mu-formulario-list">Mis encuestas</a></li>
+              <li id="nav-usuarios" style="display:none;"><a href="usuarios.html">Usuarios</a></li>
+              <li id="nav-plantillas" style="display:none;"><a href="admin-plantillas.html">Plantillas</a></li>
+            </ul>
+          </div>
+
+          <ul class="nav navbar-nav navbar-right" style="margin-right:0;">
+            <li style="padding: 15px 10px;">
+              <span id="auth-badge" class="label label-default" style="display:none"></span>
+            </li>
+            <li><a href="javascript:void(0)" id="auth-button">Log in</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="mu-hero-overlay">
+        <div class="container">
+          <div class="mu-hero-area">
+            <div class="mu-hero-featured-area">
+              <div class="mu-hero-featured-content" style="padding-top: 120px; padding-bottom: 40px;">
+                <h1>NUEVA ENCUESTA</h1>
+                <p class="mu-event-date-line">Registro de Formulario</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main role="main" style="padding-top: 20px;">
+      <section id="mu-formulario-create" class="mu-section-pad">
+        <div class="container">
+          <div id="auth-gate" class="alert alert-warning" style="display:none">
+            Necesitas iniciar sesion para registrar una encuesta.
+          </div>
+
+          <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+              <div id="form-error" class="alert alert-danger" style="display:none"></div>
+              <div id="form-success" class="alert alert-success" style="display:none"></div>
+
+              <form id="formulario-form">
+                <div class="row">
+                  <div class="col-sm-6">
+                    <div class="form-group">
+                      <label for="form-nombre">Nombre</label>
+                      <input type="text" class="form-control" id="form-nombre" maxlength="150" required>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="form-group">
+                      <label for="form-sector">Sector</label>
+                      <input type="text" class="form-control" id="form-sector" maxlength="150" required>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-sm-6">
+                    <div class="form-group">
+                      <label for="form-nivel">Nivel escolar</label>
+                      <select class="form-control" id="form-nivel" required>
+                        <option value="">Selecciona...</option>
+                        <option value="BASICO">BASICO</option>
+                        <option value="MEDIO">MEDIO</option>
+                        <option value="GRADO_UNIVERSITARIO">GRADO_UNIVERSITARIO</option>
+                        <option value="POSTGRADO">POSTGRADO</option>
+                        <option value="DOCTORADO">DOCTORADO</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="form-group">
+                      <label>Ubicacion (opcional)</label>
+                      <div class="row">
+                        <div class="col-xs-6">
+                          <input type="text" class="form-control" id="form-latitud" placeholder="Latitud">
+                        </div>
+                        <div class="col-xs-6">
+                          <input type="text" class="form-control" id="form-longitud" placeholder="Longitud">
+                        </div>
+                      </div>
+                      <div style="margin-top:10px;">
+                        <button type="button" class="btn btn-default btn-sm" id="form-geo-btn">
+                          <i class="fa fa-map-marker"></i> Obtener ubicacion
+                        </button>
+                        <span id="form-geo-msg" class="text-muted" style="margin-left:8px;"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-foto">Foto (opcional)</label>
+                  <input type="file" id="form-foto" accept="image/*" class="form-control">
+                  <input type="hidden" id="form-foto-base64">
+                  <div id="form-photo-msg" class="text-muted" style="margin-top:6px;"></div>
+                  <img id="form-foto-preview" class="mu-form-preview" src="" alt="preview" style="display:none">
+                </div>
+
+                <button type="submit" class="mu-send-msg-btn btn btn-primary" style="width:auto;">
+                  <i class="fa fa-check"></i> Guardar encuesta
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Auth modal -->
+    <div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="authModalLabel">Iniciar sesion</h4>
+          </div>
+          <div class="modal-body">
+            <div id="auth-error" class="alert alert-danger" style="display:none"></div>
+            <form id="login-form">
+              <div class="form-group">
+                <label for="login-username">Usuario</label>
+                <input type="text" class="form-control" id="login-username" autocomplete="username" required>
+              </div>
+              <div class="form-group">
+                <label for="login-password">Contrasena</label>
+                <input type="password" class="form-control" id="login-password" autocomplete="current-password" required>
+              </div>
+              <button id="login-submit" type="submit" class="btn btn-primary">
+                <i class="fa fa-sign-in"></i> Entrar
+              </button>
+            </form>
+            <p class="text-muted" style="margin-top:10px;">
+              Endpoint: <code>POST /api/auth/login</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vendor (Bootstrap 3 requiere jQuery) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- App -->
+    <script src="js/models.js"></script>
+    <script src="js/encuestas.js"></script>
+
+    <!-- Página crear-encuesta específica -->
+    <script>
+    (function() {
+      'use strict';
+
+      var auth = null;
+      var gpsStatus = 'Esperando...';
+      var currentLat = null;
+      var currentLng = null;
+      var plantillaActual = null;
+
+      // Elementos del DOM
+      var formElement = document.getElementById('formulario-form');
+      var authModal = document.getElementById('authModal');
+      var authButton = document.getElementById('auth-button');
+      var authGate = document.getElementById('auth-gate');
+      var formError = document.getElementById('form-error');
+      var formSuccess = document.getElementById('form-success');
+      var gpsStatusEl = null; // Se crea dinámicamente
+      var latitudInput = document.getElementById('form-latitud');
+      var longitudInput = document.getElementById('form-longitud');
+      var fotoInput = document.getElementById('form-foto');
+      var fotoBase64Input = document.getElementById('form-foto-base64');
+      var fotoPreview = document.getElementById('form-foto-preview');
+      var formGeoBtn = document.getElementById('form-geo-btn');
+      var formGeoMsg = document.getElementById('form-geo-msg');
+
+      function showAuthModal() {
+        if (typeof jQuery !== 'undefined') {
+          jQuery('#authModal').modal('show');
+        }
+      }
+
+      function hideAuthModal() {
+        if (typeof jQuery !== 'undefined') {
+          jQuery('#authModal').modal('hide');
+        }
+      }
+
+      function forceUpdateUI() {
+        auth = getAuthLocal();
+        if (!auth) {
+          show(authGate, true);
+          show(formElement, false);
+          showAuthModal();
+        } else {
+          show(authGate, false);
+          show(formElement, true);
+          hideAuthModal();
+          initGPS();
+          loadPlantilla();
+        }
+      }
+
+      function getAuthLocal() {
+        try {
+          var raw = localStorage.getItem('appencuesta.auth');
+          if (!raw) return null;
+          var a = JSON.parse(raw);
+          if (!a || !a.token) return null;
+          return { token: a.token };
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function show(el, on) {
+        if (!el) return;
+        el.style.display = on ? '' : 'none';
+      }
+
+      function setText(el, txt) {
+        if (!el) return;
+        el.textContent = txt == null ? '' : String(txt);
+      }
+
+      // GPS
+      function initGPS() {
+        if (!gpsStatusEl) {
+          gpsStatusEl = document.createElement('div');
+          gpsStatusEl.id = 'gps-status';
+          gpsStatusEl.className = 'text-muted';
+          gpsStatusEl.style.marginBottom = '10px';
+          if (latitudInput.parentNode) {
+            latitudInput.parentNode.parentNode.insertBefore(gpsStatusEl, latitudInput.parentNode);
+          }
+        }
+        setText(gpsStatusEl, 'Obteniendo ubicación...');
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(position) {
+              currentLat = position.coords.latitude;
+              currentLng = position.coords.longitude;
+              latitudInput.value = currentLat.toFixed(6);
+              longitudInput.value = currentLng.toFixed(6);
+              setText(gpsStatusEl, 'Ubicación obtenida: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4));
+            },
+            function(error) {
+              setText(gpsStatusEl, 'Error GPS: ' + error.message);
+            }
+          );
+        } else {
+          setText(gpsStatusEl, 'Geolocalización no disponible');
+        }
+      }
+
+      // Manual geo button
+      if (formGeoBtn) {
+        formGeoBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          initGPS();
+        });
+      }
+
+      // Foto
+      if (fotoInput) {
+        fotoInput.addEventListener('change', function(e) {
+          var file = e.target.files[0];
+          if (!file) {
+            fotoBase64Input.value = '';
+            fotoPreview.style.display = 'none';
+            return;
+          }
+
+          var reader = new FileReader();
+          reader.onload = function(evt) {
+            fotoBase64Input.value = evt.target.result;
+            fotoPreview.src = evt.target.result;
+            fotoPreview.style.display = 'block';
+            setText(formGeoMsg, '✓ Foto cargada');
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Cargar plantilla default
+      function loadPlantilla() {
+        var authLocal = getAuthLocal();
+        if (!authLocal) return;
+
+        fetch('/api/plantillas', { 
+          credentials: 'same-origin',
+          headers: { 'Authorization': 'Bearer ' + authLocal.token }
+        })
+          .then(function(r) {
+            if (r.status === 401 || r.status === 403) {
+              console.log('No autorizado para plantillas');
+              return null;
+            }
+            return r.json();
+          })
+          .then(function(data) {
+            if (!data || !Array.isArray(data)) return;
+
+            var defaultPlantilla = null;
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].esDefault) {
+                defaultPlantilla = data[i];
+                break;
+              }
+            }
+
+            if (!defaultPlantilla && data.length > 0) {
+              defaultPlantilla = data[0];
+            }
+
+            if (defaultPlantilla) {
+              plantillaActual = defaultPlantilla;
+              renderCamposExtra(defaultPlantilla.campos || []);
+            }
+          })
+          .catch(function(err) {
+            console.log('Error cargando plantilla:', err);
+          });
+      }
+
+      // Renderizar campos extra
+      function renderCamposExtra(campos) {
+        var container = document.getElementById('campos-extra');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'campos-extra';
+          container.style.marginTop = '20px';
+          formElement.appendChild(container);
+        }
+
+        if (!campos || campos.length === 0) {
+          container.innerHTML = '';
+          return;
+        }
+
+        var html = '<div class="panel panel-default"><div class="panel-heading"><strong>Campos Adicionales</strong></div><div class="panel-body">';
+
+        campos.forEach(function(campo) {
+          var type = (campo.tipo || 'text').toLowerCase();
+          var fieldId = 'campo-' + (campo.id || campo.nombre);
+          var label = campo.nombre || 'Campo';
+          var required = campo.requerido ? ' required' : '';
+          var value = campo.valor || '';
+
+          if (type === 'text' || type === 'email' || type === 'number') {
+            html += '<div class="form-group">';
+            html += '<label for="' + fieldId + '">' + label + '</label>';
+            html += '<input type="' + type + '" class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '"' + required + '>';
+            html += '</div>';
+          } else if (type === 'textarea') {
+            html += '<div class="form-group">';
+            html += '<label for="' + fieldId + '">' + label + '</label>';
+            html += '<textarea class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '" rows="3"' + required + '></textarea>';
+            html += '</div>';
+          } else if (type === 'select') {
+            var opciones = campo.opciones || [];
+            html += '<div class="form-group">';
+            html += '<label for="' + fieldId + '">' + label + '</label>';
+            html += '<select class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '"' + required + '>';
+            html += '<option value="">Selecciona...</option>';
+            opciones.forEach(function(opt) {
+              html += '<option value="' + opt + '">' + opt + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+          }
+        });
+
+        html += '</div></div>';
+        container.innerHTML = html;
+      }
+
+      // Helper para leer/escribir formularios
+      function readFormulariosLocal() {
+        try {
+          var raw = localStorage.getItem('appencuesta.formularios');
+          var arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function writeFormulariosLocal(arr) {
+        localStorage.setItem('appencuesta.formularios', JSON.stringify(arr || []));
+      }
+
+      // Submit
+      if (formElement) {
+        formElement.addEventListener('submit', function(e) {
+          e.preventDefault();
+
+          var nombre = document.getElementById('form-nombre').value.trim();
+          var sector = document.getElementById('form-sector').value.trim();
+          var nivelEscolar = document.getElementById('form-nivel').value;
+          var fotob64 = fotoBase64Input.value || '';
+
+          if (!nombre || !sector || !nivelEscolar) {
+            show(formError, true);
+            setText(formError, 'Por favor completa todos los campos requeridos.');
+            return;
+          }
+
+          // Recolectar campos extra
+          var camposExtra = [];
+          var campoExtraEls = document.querySelectorAll('.campo-extra');
+          campoExtraEls.forEach(function(el) {
+            camposExtra.push({
+              id: el.getAttribute('data-id'),
+              valor: el.value
+            });
+          });
+
+          // Construir payload
+          var payload = {
+            nombre: nombre,
+            sector: sector,
+            nivelEscolar: nivelEscolar,
+            usuarioRegistro: 'usuario-local', // Por ahora
+            latitud: currentLat || null,
+            longitud: currentLng || null,
+            fotoBase64: fotob64,
+            camposExtra: camposExtra,
+            sincronizado: false
+          };
+
+          // Guardar en localStorage
+          var formularios = readFormulariosLocal();
+          payload.id = 'form-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+          payload.fechaRegistro = new Date().toISOString();
+          formularios.push(payload);
+          writeFormulariosLocal(formularios);
+
+          // Intentar sincronizar
+          var authLocal = getAuthLocal();
+          if (authLocal && authLocal.token) {
+            fetch('/api/formularios', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + authLocal.token
+              },
+              body: JSON.stringify(payload)
+            })
+            .then(function(r) {
+              if (r.status === 201) {
+                show(formError, false);
+                show(formSuccess, true);
+                setText(formSuccess, '✓ Encuesta guardada exitosamente.');
+                formElement.reset();
+                fotoPreview.style.display = 'none';
+                // Marcar como sincronizado
+                formularios = readFormulariosLocal();
+                for (var i = 0; i < formularios.length; i++) {
+                  if (formularios[i].id === payload.id) {
+                    formularios[i].sincronizado = true;
+                    break;
+                  }
+                }
+                writeFormulariosLocal(formularios);
+                setTimeout(function() { show(formSuccess, false); }, 3000);
+                return;
+              }
+              throw new Error('Error ' + r.status);
+            })
+            .catch(function(err) {
+              console.log('Sincronización fallida, guardada localmente:', err);
+              show(formError, false);
+              show(formSuccess, true);
+              setText(formSuccess, '✓ Encuesta guardada localmente. Se sincronizará cuando tengas conexión.');
+              formElement.reset();
+              fotoPreview.style.display = 'none';
+              setTimeout(function() { show(formSuccess, false); }, 3000);
+            });
+          } else {
+            show(formError, false);
+            show(formSuccess, true);
+            setText(formSuccess, '✓ Encuesta guardada localmente. Inicia sesión para sincronizar.');
+            formElement.reset();
+            fotoPreview.style.display = 'none';
+            setTimeout(function() { show(formSuccess, false); }, 3000);
+          }
+        });
+      }
+
+      // Handler para botón de logout/login
+      if (authButton) {
+        authButton.addEventListener('click', function() {
+          var authLocal = getAuthLocal();
+          if (authLocal) {
+            localStorage.removeItem('appencuesta.auth');
+            auth = null;
+            forceUpdateUI();
+          } else {
+            showAuthModal();
+          }
+        });
+      }
+
+      // Inicializar al cargar
+      document.addEventListener('DOMContentLoaded', function() {
+        forceUpdateUI();
+      });
+
+      // Observar cambios en el storage (para cuando el login se complete en otro script)
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'appencuesta.auth') {
+          setTimeout(function() { forceUpdateUI(); }, 100);
+        }
+      });
+
+      // Exposición de funciones globales (por compatibilidad)
+      if (typeof window.getAuthLocal === 'undefined') {
+        window.getAuthLocal = getAuthLocal;
+      }
+
+      if (typeof window.readFormulariosLocal === 'undefined') {
+        window.readFormulariosLocal = readFormulariosLocal;
+      }
+
+      if (typeof window.writeFormulariosLocal === 'undefined') {
+        window.writeFormulariosLocal = writeFormulariosLocal;
+      }
+    })();
+    </script>
+
+    <!-- Navbar role-based visibility -->
+    <script>
+    (function() {
+      function b64UrlDecode(s) {
+        var b64 = String(s).replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        try {
+          return new TextDecoder('utf-8').decode(bytes);
+        } catch (e) {
+          return bin;
+        }
+      }
+
+      function parseJwt(token) {
+        try {
+          var parts = String(token).split('.');
+          if (parts.length < 2) return null;
+          return JSON.parse(b64UrlDecode(parts[1]));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function getAuth() {
+        try {
+          var raw = localStorage.getItem('appencuesta.auth');
+          if (!raw) return null;
+          var a = JSON.parse(raw);
+          if (!a || !a.token) return null;
+          var payload = parseJwt(a.token);
+          if (!payload) return null;
+          return {
+            token: a.token,
+            rol: payload.rol || null
+          };
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Check role and show/hide admin links
+      var auth = getAuth();
+      var navUsuarios = document.getElementById('nav-usuarios');
+      var navPlantillas = document.getElementById('nav-plantillas');
+      
+      if (auth && auth.rol === 'ADMIN') {
+        if (navUsuarios) navUsuarios.style.display = '';
+        if (navPlantillas) navPlantillas.style.display = '';
+      }
+    })();
+    </script>
+  </body>
+</html>
