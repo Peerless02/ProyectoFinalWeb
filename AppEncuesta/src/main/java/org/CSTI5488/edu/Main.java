@@ -6,12 +6,14 @@ import org.CSTI5488.edu.controller.AuthController;
 import org.CSTI5488.edu.controller.FormularioController;
 import org.CSTI5488.edu.controller.SyncController;
 import org.CSTI5488.edu.db.MongoConfig;
+import org.CSTI5488.edu.grpc.GrpcServer;
 import org.CSTI5488.edu.service.AuthService;
 import org.CSTI5488.edu.service.FormularioService;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String puerto = System.getenv().getOrDefault("PUERTO", "7000");
+        String grpcPuerto = System.getenv().getOrDefault("GRPC_PORT", "9090");
 
         System.out.println("MongoDB URL: " + MongoConfig.getMongoUrlRedacted() + " (db=" + MongoConfig.getMongoDbName() + ")");
 
@@ -53,5 +55,9 @@ public class Main {
         authController.registerRoutes(app);
         formularioController.registerRoutes(app);
         syncController.registerRoutes(app);
+
+        GrpcServer grpcServer = new GrpcServer(formularioService, Integer.parseInt(grpcPuerto));
+        grpcServer.start();
+        System.out.println("gRPC server started on port " + grpcPuerto);
     }
 }
