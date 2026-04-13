@@ -66,7 +66,7 @@
             <div class="col-md-12">
               <div class="mu-title-area">
                 <h2 class="mu-title">Eventos</h2>
-                <p th:if="${usuario != null && usuario.rol != null}" th:text="${'Rol: ' + usuario.rol.name()}">Rol</p>
+                <p th:if="${usuario != null && usuario.rol != null}" th:text="${'Rol: ' + usuario.rol}">Rol</p>
               </div>
             </div>
           </div>
@@ -79,7 +79,7 @@
             </div>
             <div class="col-sm-6 text-right">
               <a class="btn btn-primary"
-                 th:if="${usuario != null && usuario.rol != null && (usuario.rol.name() == 'ADMINISTRADOR' || usuario.rol.name() == 'ORGANIZADOR')}"
+                 th:if="${usuario != null && usuario.rol != null && (usuario.rol == 'ADMIN' || usuario.rol == 'ORGANIZADOR')}"
                  href="/eventos/nuevo"><i class="fa fa-plus"></i> Crear evento</a>
             </div>
           </div>
@@ -104,23 +104,23 @@
                       <td th:text="${e.lugar}">-</td>
                       <td th:text="${e.estado}">-</td>
                       <td>
-                        <form th:if="${usuario != null && usuario.rol != null && usuario.rol.name() == 'ADMINISTRADOR' && e.estado != null && e.estado.name() != 'PUBLICADO'}"
+                        <form th:if="${usuario != null && usuario.rol != null && usuario.rol == 'ADMIN' && e.estado != null && e.estado.name() != 'PUBLICADO'}"
                               th:action="@{/eventos/{id}/publicar(id=${e.id})}"
                               method="post" style="display:inline">
                           <button class="btn btn-xs btn-success" type="submit">Publicar</button>
                         </form>
-                        <form th:if="${usuario != null && usuario.rol != null && usuario.rol.name() == 'ADMINISTRADOR' && e.estado != null && e.estado.name() == 'PUBLICADO'}"
+                        <form th:if="${usuario != null && usuario.rol != null && usuario.rol == 'ADMIN' && e.estado != null && e.estado.name() == 'PUBLICADO'}"
                               th:action="@{/eventos/{id}/despublicar(id=${e.id})}"
                               method="post" style="display:inline">
                           <button class="btn btn-xs btn-warning" type="submit">Despublicar</button>
                         </form>
                         <a class="btn btn-xs btn-default"
                            th:href="@{/eventos/{id}/editar(id=${e.id})}"
-                           th:if="${usuario != null && usuario.rol != null && (usuario.rol.name() == 'ADMINISTRADOR' || (usuario.rol.name() == 'ORGANIZADOR' && e.organizadorId != null && e.organizadorId == usuario.id))}">
+                           th:if="${usuario != null && usuario.rol != null && (usuario.rol == 'ADMIN' || (usuario.rol == 'ORGANIZADOR' && e.organizadorId != null && e.organizadorId == usuario.id))}">
                           Editar
                         </a>
                         <button class="btn btn-xs btn-danger"
-                                th:if="${usuario != null && usuario.rol != null && (usuario.rol.name() == 'ADMINISTRADOR' || (usuario.rol.name() == 'ORGANIZADOR' && e.organizadorId != null && e.organizadorId == usuario.id))}"
+                                th:if="${usuario != null && usuario.rol != null && (usuario.rol == 'ADMIN' || (usuario.rol == 'ORGANIZADOR' && e.organizadorId != null && e.organizadorId == usuario.id))}"
                                 th:attr="data-id=${e.id}"
                                 onclick="eliminarEvento(this)">
                           Eliminar

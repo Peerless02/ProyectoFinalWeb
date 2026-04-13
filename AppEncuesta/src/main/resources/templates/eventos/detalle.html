@@ -78,7 +78,7 @@
                     <div class="col-md-4 text-right" style="padding-top: 10px;">
                       <a class="btn btn-default" href="/eventos"><i class="fa fa-arrow-left"></i> Volver</a>
                       <a class="btn btn-primary"
-                         th:if="${usuario != null && usuario.rol != null && evento != null && (usuario.rol.name() == 'ADMINISTRADOR' || (usuario.rol.name() == 'ORGANIZADOR' && evento.organizadorId != null && evento.organizadorId == usuario.id))}"
+                         th:if="${usuario != null && usuario.rol != null && evento != null && (usuario.rol == 'ADMIN' || (usuario.rol == 'ORGANIZADOR' && evento.organizadorId != null && evento.organizadorId == usuario.id))}"
                          th:href="@{/eventos/{id}/editar(id=${evento.id})}">
                         <i class="fa fa-pencil"></i> Editar
                       </a>

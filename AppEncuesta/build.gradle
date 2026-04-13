@@ -67,7 +67,7 @@ sourceSets {
 }
 
 run {
-    def envFile = file('.env.local')
+    def envFile = file('credencial.env')
     if (envFile.exists()) {
         envFile.eachLine { line ->
             def trimmed = line.trim()

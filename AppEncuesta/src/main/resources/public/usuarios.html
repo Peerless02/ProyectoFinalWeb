@@ -81,7 +81,7 @@
               <div class="form-group">
                 <select class="form-control" id="role-filter">
                   <option value="">Todos los roles</option>
-                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="ADMIN">ADMIN</option>
                   <option value="ESTUDIANTE">ESTUDIANTE</option>
                   <option value="ORGANIZADOR">ORGANIZADOR</option>
                   <option value="__NULL__">SIN ROL</option>
@@ -150,7 +150,7 @@
               <div class="form-group">
                 <label for="cu-role">Rol</label>
                 <select class="form-control" id="cu-role" name="rol" required>
-                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="ADMIN">ADMIN</option>
                   <option value="ESTUDIANTE">ESTUDIANTE</option>
                   <option value="ORGANIZADOR">ORGANIZADOR</option>
                 </select>
@@ -242,7 +242,7 @@
 
           var roleOptions = [
             { v: '', t: 'SIN ROL' },
-            { v: 'ADMINISTRADOR', t: 'ADMINISTRADOR' },
+            { v: 'ADMIN', t: 'ADMIN' },
             { v: 'ESTUDIANTE', t: 'ESTUDIANTE' },
             { v: 'ORGANIZADOR', t: 'ORGANIZADOR' }
           ].map(function (opt) {
@@ -296,7 +296,7 @@
         return fetch('/api/session', { credentials: 'same-origin' })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            if (!data || !data.loggedIn || !data.user || data.user.rol !== 'ADMINISTRADOR') {
+            if (!data || !data.loggedIn || !data.user || data.user.rol !== 'ADMIN') {
               window.location.href = 'index.html';
               return false;
             }

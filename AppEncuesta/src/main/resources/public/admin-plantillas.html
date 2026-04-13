@@ -67,7 +67,7 @@
           </div>
 
           <div id="admin-gate" class="alert alert-info" style="display:none">
-            Solo el rol <code>ADMINISTRADOR</code> puede crear o modificar plantillas. Puedes verlas en modo lectura.
+            Solo el rol <code>ADMIN</code> puede crear o modificar plantillas. Puedes verlas en modo lectura.
           </div>
 
           <div class="row">
@@ -405,7 +405,7 @@
 
         function isAdmin() {
           var auth = getAuth();
-          return !!(auth && auth.rol === 'ADMINISTRADOR');
+          return !!(auth && auth.rol === 'ADMIN');
         }
 
         function renderAuth() {

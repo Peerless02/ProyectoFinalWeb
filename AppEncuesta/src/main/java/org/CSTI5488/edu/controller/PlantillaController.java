@@ -1,15 +1,16 @@
 package org.CSTI5488.edu.controller;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
-import io.javalin.Javalin;
-import io.javalin.http.Context;
+import java.util.Map;
+
 import org.CSTI5488.edu.model.CampoExtra;
 import org.CSTI5488.edu.model.Plantilla;
 import org.CSTI5488.edu.service.AuthService;
 import org.CSTI5488.edu.service.PlantillaService;
 
-import java.util.List;
-import java.util.Map;
+import com.auth0.jwt.interfaces.DecodedJWT;
+
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 
 public class PlantillaController {
 
@@ -50,8 +51,8 @@ public class PlantillaController {
     private boolean requireAdmin(Context ctx, DecodedJWT jwt) {
         if (jwt == null) return false;
         String rol = jwt.getClaim("rol") != null ? jwt.getClaim("rol").asString() : null;
-        if (!"ADMINISTRADOR".equals(rol)) {
-            ctx.status(403).json(Map.of("error", "Solo ADMINISTRADOR puede modificar plantillas"));
+        if (!"ADMIN".equals(rol)) {
+            ctx.status(403).json(Map.of("error", "Solo ADMIN puede modificar plantillas"));
             return false;
         }
         return true;

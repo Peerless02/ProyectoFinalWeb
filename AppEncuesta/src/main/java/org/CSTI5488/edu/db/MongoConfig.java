@@ -1,13 +1,5 @@
 package org.CSTI5488.edu.db;
 
-import com.mongodb.MongoClientException;
-import com.mongodb.MongoSocketOpenException;
-import com.mongodb.MongoTimeoutException;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,6 +8,14 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Objects;
+
+import com.mongodb.MongoClientException;
+import com.mongodb.MongoSocketOpenException;
+import com.mongodb.MongoTimeoutException;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 public class MongoConfig {
 
