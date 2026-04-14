@@ -565,6 +565,8 @@
 
     if (webcamClearBtn) {
       webcamClearBtn.addEventListener('click', function () {
+        var wc = getWebcam();
+        if (wc) wc.stop();
         if (photoBase64) photoBase64.value = '';
         show(photoPreview, false);
         show(webcamRetakeBtn, false);
@@ -1014,95 +1016,6 @@
     });
   }
 
-  function wireWebcam() {
-    var video      = $('webcam');
-    var canvas     = $('webcam-canvas');
-    if (!video || !canvas) return;
-    if (typeof Webcam === 'undefined') return;
-
-    var webcamInst  = new Webcam(video, 'user', canvas);
-    var photoBase64 = $('form-foto-base64');
-    var preview     = $('form-foto-preview');
-    var msg         = $('form-photo-msg');
-    var startBtn    = $('webcam-start-btn');
-    var captureBtn  = $('webcam-capture-btn');
-    var switchBtn   = $('webcam-switch-btn');
-    var retakeBtn   = $('webcam-retake-btn');
-    var clearBtn    = $('webcam-clear-btn');
-
-    function camMsg(t) { if (msg) msg.textContent = t || ''; }
-
-    function enterCapture() {
-      show(video, true);
-      show(startBtn, false);
-      show(captureBtn, true);
-      show(switchBtn, true);
-      show(retakeBtn, false);
-      show(clearBtn, false);
-    }
-
-    function enterPreview(dataUrl) {
-      if (photoBase64) photoBase64.value = dataUrl;
-      if (preview) { preview.src = dataUrl; show(preview, true); }
-      show(video, false);
-      show(startBtn, false);
-      show(captureBtn, false);
-      show(switchBtn, false);
-      show(retakeBtn, true);
-      show(clearBtn, true);
-      camMsg('Foto capturada.');
-    }
-
-    function enterIdle() {
-      if (photoBase64) photoBase64.value = '';
-      if (preview) { preview.src = ''; show(preview, false); }
-      show(video, false);
-      show(startBtn, true);
-      show(captureBtn, false);
-      show(switchBtn, false);
-      show(retakeBtn, false);
-      show(clearBtn, false);
-      camMsg('');
-    }
-
-    if (startBtn) {
-      startBtn.addEventListener('click', function () {
-        webcamInst.start()
-          .then(function () { enterCapture(); })
-          .catch(function (err) { camMsg('No se pudo acceder a la camara: ' + err); });
-      });
-    }
-
-    if (captureBtn) {
-      captureBtn.addEventListener('click', function () {
-        var dataUrl = webcamInst.snap();
-        webcamInst.stop();
-        enterPreview(dataUrl);
-      });
-    }
-
-    if (switchBtn) {
-      switchBtn.addEventListener('click', function () { webcamInst.flip(); });
-    }
-
-    if (retakeBtn) {
-      retakeBtn.addEventListener('click', function () {
-        if (photoBase64) photoBase64.value = '';
-        if (preview) { preview.src = ''; show(preview, false); }
-        webcamInst.start()
-          .then(function () { enterCapture(); camMsg(''); })
-          .catch(function (err) { camMsg('No se pudo acceder a la camara: ' + err); enterIdle(); });
-      });
-    }
-
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function () {
-        webcamInst.stop();
-        enterIdle();
-      });
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', function () {
     // If auth is invalid/expired, drop it.
     if (!getAuth()) clearAuth();
@@ -1122,7 +1035,6 @@
     wireAuth();
     wireCreate();
     wireEditModal();
-    wireWebcam();
     wireListActions();
     renderAuth();
     renderList();

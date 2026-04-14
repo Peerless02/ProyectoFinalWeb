@@ -41,7 +41,8 @@ public class FormularioController {
     }
 
     private void crear(Context ctx) {
-        if (validarToken(ctx) == null) return;
+        DecodedJWT jwt = validarToken(ctx);
+        if (jwt == null) return;
 
         Formulario formulario = ctx.bodyAsClass(Formulario.class);
         if (formulario.getNombre() == null || formulario.getSector() == null || formulario.getNivelEscolar() == null) {
@@ -49,6 +50,7 @@ public class FormularioController {
             return;
         }
 
+        formulario.setUsuarioRegistro(jwt.getSubject());
         formularioService.crear(formulario);
         ctx.status(201).json(Map.of("mensaje", "Formulario registrado exitosamente"));
     }
