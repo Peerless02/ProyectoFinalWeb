@@ -36,4 +36,9 @@ public class FormularioService {
     public List<Formulario> listarConCoordenadas() {
         return formularioRepository.findWithCoords();
     }
+
+    /** Verifica si un formulario con este ID local ya fue sincronizado por el usuario. */
+    public boolean existePorLocalId(String localId, String username) {
+        return formularioRepository.existsByLocalId(localId, username);
+    }
 }

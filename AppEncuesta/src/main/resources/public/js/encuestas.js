@@ -325,8 +325,7 @@
 
   function handleWorkerMessage(e) {
     var data = e.data;
-    isSyncing = false;
-    if (!data) return;
+    if (!data) { isSyncing = false; return; }
 
     if (data.type === 'SYNC_RESULT') {
       var result = data.result || {};
@@ -343,11 +342,19 @@
           }
         }
         writeFormularios(all);
+        // Marcar como no-sincronizando DESPUÉS de actualizar localStorage
+        // para evitar que triggerSync() re-envíe los mismos formularios
+        isSyncing = false;
         renderList();
         renderSyncBadge();
+      } else {
+        isSyncing = false;
       }
     } else if (data.type === 'SYNC_ERROR') {
+      isSyncing = false;
       console.warn('[Sync] Error de sincronizacion:', data.message);
+    } else {
+      isSyncing = false;
     }
   }
 
@@ -587,16 +594,24 @@
           return;
         }
         geoBtn.disabled = true;
+        setText(msgEl, 'Obteniendo ubicacion...');
         navigator.geolocation.getCurrentPosition(function (pos) {
           var lat = pos && pos.coords ? pos.coords.latitude : null;
           var lng = pos && pos.coords ? pos.coords.longitude : null;
           if (latEl) latEl.value = lat != null ? String(lat) : '';
           if (lngEl) lngEl.value = lng != null ? String(lng) : '';
           setText(msgEl, 'Ubicacion capturada.');
-        }, function () {
-          setText(msgEl, 'No se pudo obtener la ubicacion.');
-        }, { enableHighAccuracy: true, timeout: 10000 });
-        setTimeout(function () { geoBtn.disabled = false; }, 1200);
+          geoBtn.disabled = false;
+        }, function (err) {
+          var reasons = {
+            1: 'Permiso denegado. Permite el acceso a la ubicacion en tu navegador.',
+            2: 'Ubicacion no disponible. Verifica que el GPS este activo.',
+            3: 'Tiempo de espera agotado. Intenta de nuevo.'
+          };
+          var msg = reasons[err && err.code] || ('Error desconocido: ' + (err && err.message ? err.message : ''));
+          setText(msgEl, msg);
+          geoBtn.disabled = false;
+        }, { enableHighAccuracy: true, timeout: 15000 });
       });
     }
 
@@ -849,7 +864,7 @@
   function syncDirectly(token, pendingFormularios, callback) {
     // Fallback: sincronización directa vía WebSocket sin Web Worker
     var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var wsUrl = wsProtocol + '//' + window.location.host + '/sync';
+    var wsUrl = wsProtocol + '//' + window.location.host + '/sync?token=' + encodeURIComponent(token);
     var ws;
 
     try {

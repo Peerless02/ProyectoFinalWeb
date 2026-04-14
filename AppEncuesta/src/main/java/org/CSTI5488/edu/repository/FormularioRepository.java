@@ -30,6 +30,7 @@ public class FormularioRepository {
 
         Document doc = new Document()
             .append("_id", new ObjectId())
+            .append("localId", formulario.getId())
             .append("nombre", formulario.getNombre())
             .append("sector", formulario.getSector())
             .append("nivelEscolar", formulario.getNivelEscolar().name())
@@ -80,6 +81,18 @@ public class FormularioRepository {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    /**
+     * Verifica si ya existe un formulario con el mismo ID local del cliente
+     * para un usuario dado. Se usa para deduplicar al sincronizar.
+     */
+    public boolean existsByLocalId(String localId, String username) {
+        var filter = Filters.and(
+            Filters.eq("localId", localId),
+            Filters.eq("usuarioRegistro", username)
+        );
+        return collection.countDocuments(filter) > 0;
     }
 
     public List<Formulario> findWithCoords() {

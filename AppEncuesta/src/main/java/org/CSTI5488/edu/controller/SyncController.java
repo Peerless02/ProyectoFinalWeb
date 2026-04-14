@@ -96,6 +96,15 @@ public class SyncController {
             String localId = f.getId();
             f.setUsuarioRegistro(username); // enforce from JWT
             try {
+                // Deduplicar: si ya existe un formulario con el mismo localId para este usuario,
+                // no lo volvemos a insertar, pero lo reportamos como guardado.
+                if (localId != null && !localId.isEmpty()
+                        && formularioService.existePorLocalId(localId, username)) {
+                    guardados++;
+                    idsGuardados.add(localId);
+                    log.info("[Sync] Formulario {} ya existe para {}, omitido (dedup)", localId, username);
+                    continue;
+                }
                 formularioService.crear(f);
                 guardados++;
                 if (localId != null) idsGuardados.add(localId);
