@@ -95,6 +95,12 @@ public class FormularioRepository {
         return collection.countDocuments(filter) > 0;
     }
 
+    /** Elimina todos los formularios de un usuario. Retorna cuantos se eliminaron. */
+    public long deleteByUsuario(String username) {
+        var result = collection.deleteMany(Filters.eq("usuarioRegistro", username));
+        return result.getDeletedCount();
+    }
+
     public List<Formulario> findWithCoords() {
         List<Formulario> resultado = new ArrayList<>();
         var filter = Filters.and(

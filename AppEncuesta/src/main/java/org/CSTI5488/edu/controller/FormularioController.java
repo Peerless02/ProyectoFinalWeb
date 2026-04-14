@@ -25,6 +25,7 @@ public class FormularioController {
         app.unsafe.routes.put("/api/formularios/{id}", this::actualizar);
         app.unsafe.routes.get("/api/formularios/usuario/{username}", this::listarPorUsuario);
         app.unsafe.routes.get("/api/formularios/mapa", this::listarMapa);
+        app.unsafe.routes.delete("/api/formularios/usuario/{username}", this::eliminarPorUsuario);
     }
 
     private DecodedJWT validarToken(Context ctx) {
@@ -100,5 +101,21 @@ public class FormularioController {
 
         List<Formulario> formularios = formularioService.listarConCoordenadas();
         ctx.json(formularios);
+    }
+
+    /** DELETE /api/formularios/usuario/{username} — elimina todas las encuestas del usuario autenticado. */
+    private void eliminarPorUsuario(Context ctx) {
+        DecodedJWT jwt = validarToken(ctx);
+        if (jwt == null) return;
+
+        String username = ctx.pathParam("username");
+        // Solo el propio usuario puede borrar sus encuestas
+        if (!jwt.getSubject().equals(username)) {
+            ctx.status(403).json(Map.of("error", "No autorizado para eliminar encuestas de otro usuario"));
+            return;
+        }
+
+        long eliminados = formularioService.eliminarPorUsuario(username);
+        ctx.status(200).json(Map.of("mensaje", "Encuestas eliminadas", "eliminados", eliminados));
     }
 }

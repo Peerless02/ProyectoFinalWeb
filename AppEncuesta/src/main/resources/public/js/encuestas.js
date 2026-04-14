@@ -738,17 +738,35 @@
           showLoginModal();
           return;
         }
-        var all = readFormularios();
-        var mine = all.filter(function (f) {
-          return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase();
+        if (!confirm('Eliminar todas tus encuestas (locales y del servidor)?')) return;
+
+        clearBtn.disabled = true;
+
+        // Eliminar del servidor primero, luego limpiar localStorage
+        fetch('/api/formularios/usuario/' + encodeURIComponent(auth.username), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + auth.token
+          }
+        }).then(function (r) {
+          if (!r.ok) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+              throw new Error((d && d.error) ? d.error : 'Error del servidor (' + r.status + ')');
+            });
+          }
+          // Servidor limpiado — ahora limpiar localStorage
+          var all = readFormularios();
+          var rest = all.filter(function (f) {
+            return String(f.usuarioRegistro || '').toLowerCase() !== String(auth.username).toLowerCase();
+          });
+          writeFormularios(rest);
+          renderList();
+          renderSyncBadge();
+        }).catch(function (err) {
+          alert('Error al limpiar encuestas: ' + (err && err.message ? err.message : err));
+        }).finally(function () {
+          clearBtn.disabled = false;
         });
-        if (mine.length === 0) return;
-        if (!confirm('Eliminar todas tus encuestas locales?')) return;
-        var rest = all.filter(function (f) {
-          return String(f.usuarioRegistro || '').toLowerCase() !== String(auth.username).toLowerCase();
-        });
-        writeFormularios(rest);
-        renderList();
       });
     }
 
