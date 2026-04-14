@@ -13,12 +13,14 @@ public class ClienteRestApp {
         Javalin app = Javalin.create(config -> {
             // Sirve src/main/resources/cliente-public/*
             config.staticFiles.add("/cliente-public", Location.CLASSPATH);
-        }).start(Integer.parseInt(puerto));
+        });
+
+        app.start(Integer.parseInt(puerto));
 
         controller.registerRoutes(app);
 
         System.out.println("Cliente REST escuchando en http://localhost:" + puerto);
-        System.out.println("Consumiento API servidor en: " + service.getServidorBaseUrl());
+        System.out.println("Consumiendo API servidor en: " + service.getServidorBaseUrl());
     }
 }
 
