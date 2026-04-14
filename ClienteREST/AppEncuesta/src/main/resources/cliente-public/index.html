@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AppEncuesta — Cliente REST</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <style>
+    body { padding-top: 70px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .token-badge { max-width: 380px; display: inline-block; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-default navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#" id="navHome">AppEncuesta — Cliente REST</a>
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navCollapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="collapse navbar-collapse" id="navCollapse">
+      <ul class="nav navbar-nav">
+        <li><a href="#" id="navLogin">Login</a></li>
+        <li><a href="#" id="navListar">Formularios</a></li>
+        <li><a href="#" id="navCrear">Nueva encuesta</a></li>
+      </ul>
+      <p class="navbar-text navbar-right" style="margin-right: 10px;">
+        <span id="authBadge" class="label label-default">No autenticado</span>
+        <span id="tokenPreview" class="label label-success token-badge" style="display:none;"></span>
+      </p>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="msg" class="alert" style="display:none;"></div>
+
+  <div id="secLogin" class="section active">
+    <div class="row">
+      <div class="col-md-6">
+        <h3>Login</h3>
+        <form id="loginForm">
+          <div class="form-group">
+            <label>Usuario</label>
+            <input class="form-control" name="username" required>
+          </div>
+          <div class="form-group">
+            <label>Contrasena</label>
+            <input class="form-control" name="password" type="password" required>
+          </div>
+          <button class="btn btn-primary" type="submit">Ingresar</button>
+        </form>
+        <p class="help-block" style="margin-top:10px;">
+          El token se guarda en la sesion del servidor del cliente (puerto 8080). Para mostrarlo en la navbar, este HTML lo guarda tambien en el navegador.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="secListar" class="section">
+    <div class="row">
+      <div class="col-md-12">
+        <h3>Formularios</h3>
+        <button class="btn btn-default" id="btnRefrescar">Refrescar</button>
+        <hr/>
+        <table class="table table-striped table-condensed" id="tablaFormularios">
+          <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Sector</th>
+            <th>Nivel escolar</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="secCrear" class="section">
+    <div class="row">
+      <div class="col-md-6">
+        <h3>Nueva encuesta</h3>
+        <form id="crearForm">
+          <div class="form-group">
+            <label>Nombre</label>
+            <input class="form-control" name="nombre" required>
+          </div>
+          <div class="form-group">
+            <label>Sector</label>
+            <input class="form-control" name="sector" required>
+          </div>
+          <div class="form-group">
+            <label>Nivel escolar</label>
+            <select class="form-control" name="nivelEscolar" required>
+              <option value="">Seleccione...</option>
+              <option>Primaria</option>
+              <option>Secundaria</option>
+              <option>Universidad</option>
+              <option>Postgrado</option>
+            </select>
+          </div>
+          <button class="btn btn-success" type="submit">Crear</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script>
+  function showMsg(type, text) {
+    var el = document.getElementById('msg');
+    el.className = 'alert alert-' + type;
+    el.textContent = text;
+    el.style.display = 'block';
+  }
+  function clearMsg() {
+    var el = document.getElementById('msg');
+    el.style.display = 'none';
+  }
+
+  function setSection(id) {
+    ['secLogin','secListar','secCrear'].forEach(function(s){
+      document.getElementById(s).className = 'section' + (s === id ? ' active' : '');
+    });
+  }
+
+  function setAuthBadge(isAuthed, token) {
+    var badge = document.getElementById('authBadge');
+    var preview = document.getElementById('tokenPreview');
+    if (!isAuthed) {
+      badge.className = 'label label-default';
+      badge.textContent = 'No autenticado';
+      preview.style.display = 'none';
+      preview.textContent = '';
+      localStorage.removeItem('cliente_token');
+      return;
+    }
+    badge.className = 'label label-success';
+    badge.textContent = 'Autenticado';
+    if (token) {
+      preview.style.display = 'inline-block';
+      preview.textContent = token;
+      localStorage.setItem('cliente_token', token);
+    }
+  }
+
+  function tokenFromStorage() {
+    return localStorage.getItem('cliente_token') || '';
+  }
+
+  async function apiJson(url, opts) {
+    var res;
+    try {
+      res = await fetch(url, opts || {});
+    } catch (e) {
+      throw new Error('No se pudo conectar con el cliente (8080): ' + e.message);
+    }
+    var text = await res.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) {}
+    if (!res.ok) {
+      var msg = (data && (data.error || data.mensaje)) ? (data.error || data.mensaje) : (text || ('HTTP ' + res.status));
+      var err = new Error(msg);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  async function listar() {
+    clearMsg();
+    var tbody = document.querySelector('#tablaFormularios tbody');
+    tbody.innerHTML = '';
+    try {
+      var items = await apiJson('/api/formularios');
+      (items || []).forEach(function(it){
+        var tr = document.createElement('tr');
+        var td1 = document.createElement('td'); td1.textContent = (it && it.nombre) ? it.nombre : '';
+        var td2 = document.createElement('td'); td2.textContent = (it && it.sector) ? it.sector : '';
+        var td3 = document.createElement('td'); td3.textContent = (it && it.nivelEscolar) ? it.nivelEscolar : '';
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        tbody.appendChild(tr);
+      });
+      setAuthBadge(true, tokenFromStorage());
+    } catch (e) {
+      if (e.status === 401) {
+        setAuthBadge(false);
+        showMsg('warning', 'Debe iniciar sesion para ver formularios.');
+      } else if (e.status === 503) {
+        showMsg('danger', 'Servidor principal no disponible: ' + e.message);
+      } else {
+        showMsg('danger', 'Error al listar: ' + e.message);
+      }
+    }
+  }
+
+  document.getElementById('navHome').addEventListener('click', function(ev){ ev.preventDefault(); setSection('secLogin'); });
+  document.getElementById('navLogin').addEventListener('click', function(ev){ ev.preventDefault(); setSection('secLogin'); });
+  document.getElementById('navListar').addEventListener('click', function(ev){ ev.preventDefault(); setSection('secListar'); listar(); });
+  document.getElementById('navCrear').addEventListener('click', function(ev){ ev.preventDefault(); setSection('secCrear'); });
+  document.getElementById('btnRefrescar').addEventListener('click', function(ev){ ev.preventDefault(); listar(); });
+
+  document.getElementById('loginForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    clearMsg();
+    var fd = new FormData(ev.target);
+    var body = new URLSearchParams();
+    fd.forEach(function(v,k){ body.append(k, v); });
+    try {
+      var data = await apiJson('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: body.toString()
+      });
+      setAuthBadge(true, (data && data.token) ? data.token : tokenFromStorage());
+      showMsg('success', 'Login exitoso. Usuario: ' + (data && data.username ? data.username : ''));
+      setSection('secListar');
+      await listar();
+    } catch (e) {
+      setAuthBadge(false);
+      if (e.status === 401) showMsg('danger', 'Credenciales invalidas.');
+      else if (e.status === 503) showMsg('danger', 'Servidor principal no disponible: ' + e.message);
+      else showMsg('danger', 'Error de login: ' + e.message);
+    }
+  });
+
+  document.getElementById('crearForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    clearMsg();
+    var fd = new FormData(ev.target);
+    var body = new URLSearchParams();
+    fd.forEach(function(v,k){ body.append(k, v); });
+    try {
+      await apiJson('/api/formularios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: body.toString()
+      });
+      showMsg('success', 'Formulario creado.');
+      ev.target.reset();
+      setSection('secListar');
+      await listar();
+    } catch (e) {
+      if (e.status === 401) showMsg('warning', 'Debe iniciar sesion para crear formularios.');
+      else if (e.status === 503) showMsg('danger', 'Servidor principal no disponible: ' + e.message);
+      else showMsg('danger', 'Error al crear: ' + e.message);
+    }
+  });
+
+  // Recupera token previo solo para mostrarlo en UI (la sesion real vive en el servidor del cliente).
+  if (tokenFromStorage()) setAuthBadge(true, tokenFromStorage());
+</script>
+</body>
+</html>
+
