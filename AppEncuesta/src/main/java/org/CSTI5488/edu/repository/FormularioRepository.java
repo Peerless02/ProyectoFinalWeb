@@ -30,6 +30,7 @@ public class FormularioRepository {
 
         Document doc = new Document()
             .append("_id", new ObjectId())
+            .append("localId", formulario.getId())
             .append("nombre", formulario.getNombre())
             .append("sector", formulario.getSector())
             .append("nivelEscolar", formulario.getNivelEscolar().name())
@@ -48,6 +49,56 @@ public class FormularioRepository {
             resultado.add(docToFormulario(doc));
         }
         return resultado;
+    }
+
+    public Formulario findById(String id) {
+        try {
+            ObjectId oid = new ObjectId(id);
+            Document doc = collection.find(Filters.eq("_id", oid)).first();
+            return doc != null ? docToFormulario(doc) : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    public boolean update(String id, Formulario formulario) {
+        try {
+            ObjectId oid = new ObjectId(id);
+            Document setDoc = new Document()
+                .append("nombre",      formulario.getNombre())
+                .append("sector",      formulario.getSector())
+                .append("nivelEscolar", formulario.getNivelEscolar().name())
+                .append("latitud",     formulario.getLatitud())
+                .append("longitud",    formulario.getLongitud());
+            if (formulario.getFotoBase64() != null) {
+                setDoc.append("fotoBase64", formulario.getFotoBase64());
+            }
+            var result = collection.updateOne(
+                Filters.eq("_id", oid),
+                new Document("$set", setDoc)
+            );
+            return result.getMatchedCount() > 0;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si ya existe un formulario con el mismo ID local del cliente
+     * para un usuario dado. Se usa para deduplicar al sincronizar.
+     */
+    public boolean existsByLocalId(String localId, String username) {
+        var filter = Filters.and(
+            Filters.eq("localId", localId),
+            Filters.eq("usuarioRegistro", username)
+        );
+        return collection.countDocuments(filter) > 0;
+    }
+
+    /** Elimina todos los formularios de un usuario. Retorna cuantos se eliminaron. */
+    public long deleteByUsuario(String username) {
+        var result = collection.deleteMany(Filters.eq("usuarioRegistro", username));
+        return result.getDeletedCount();
     }
 
     public List<Formulario> findWithCoords() {

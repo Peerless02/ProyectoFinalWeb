@@ -17,17 +17,17 @@ public class ClienteRestController {
     }
 
     public void registerRoutes(Javalin app) {
-        app.get("/", ctx -> ctx.redirect("/index.html"));
+        app.unsafe.routes.get("/", ctx -> ctx.redirect("/index.html"));
 
-        app.get("/api/login", ctx -> {
+        app.unsafe.routes.get("/api/login", ctx -> {
             ctx.contentType(ContentType.TEXT_HTML);
             ctx.result(loginHtml());
         });
 
-        app.post("/api/login", this::handleLogin);
+        app.unsafe.routes.post("/api/login", this::handleLogin);
 
-        app.get("/api/formularios", this::handleListarFormularios);
-        app.post("/api/formularios", this::handleCrearFormulario);
+        app.unsafe.routes.get("/api/formularios", this::handleListarFormularios);
+        app.unsafe.routes.post("/api/formularios", this::handleCrearFormulario);
     }
 
     private void handleLogin(Context ctx) {

@@ -1,4 +1,4 @@
-/* global Formulario */
+/* global Formulario, Webcam */
 
 (function () {
   'use strict';
@@ -213,12 +213,20 @@
           ? '<span class="label label-success">Sincronizado</span>'
           : '<span class="label label-warning">Pendiente</span>';
         
-        // Solo permitir eliminar si es local pendiente
+        var editBtn = '<button type="button" class="btn btn-xs btn-warning mu-form-edit">Editar</button>';
         var delBtn = !f.sincronizado
-          ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
-          : '<button type="button" class="btn btn-xs btn-default" disabled>No editar</button>';
+          ? ' <button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
+          : '';
 
-        out += '<tr data-id="' + String(f.id || '') + '" data-synced="' + (f.sincronizado ? 'true' : 'false') + '">'
+        out += '<tr'
+          + ' data-id="'     + escapeHtml(String(f.id || '')) + '"'
+          + ' data-synced="' + (f.sincronizado ? 'true' : 'false') + '"'
+          + ' data-nombre="' + escapeHtml(f.nombre || '') + '"'
+          + ' data-sector="' + escapeHtml(f.sector || '') + '"'
+          + ' data-nivel="'  + escapeHtml(f.nivelEscolar || '') + '"'
+          + ' data-lat="'    + (f.latitud  != null ? String(f.latitud)  : '') + '"'
+          + ' data-lng="'    + (f.longitud != null ? String(f.longitud) : '') + '"'
+          + '>'
           + '<td style="white-space:nowrap;">' + String(f.id || '').slice(0, 8) + '</td>'
           + '<td>' + (img ? (img + ' ') : '') + escapeHtml(f.nombre || '') + '</td>'
           + '<td>' + escapeHtml(f.sector || '') + '</td>'
@@ -226,7 +234,7 @@
           + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
           + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
           + '<td style="white-space:nowrap;">'
-          + delBtn
+          + editBtn + delBtn
           + '</td>'
           + '</tr>';
       }
@@ -317,8 +325,7 @@
 
   function handleWorkerMessage(e) {
     var data = e.data;
-    isSyncing = false;
-    if (!data) return;
+    if (!data) { isSyncing = false; return; }
 
     if (data.type === 'SYNC_RESULT') {
       var result = data.result || {};
@@ -335,11 +342,19 @@
           }
         }
         writeFormularios(all);
+        // Marcar como no-sincronizando DESPUÉS de actualizar localStorage
+        // para evitar que triggerSync() re-envíe los mismos formularios
+        isSyncing = false;
         renderList();
         renderSyncBadge();
+      } else {
+        isSyncing = false;
       }
     } else if (data.type === 'SYNC_ERROR') {
+      isSyncing = false;
       console.warn('[Sync] Error de sincronizacion:', data.message);
+    } else {
+      isSyncing = false;
     }
   }
 
@@ -468,38 +483,103 @@
     var form = $('formulario-form');
     if (!form) return;
 
-    var photoInput = $('form-foto');
     var photoPreview = $('form-foto-preview');
     var photoBase64 = $('form-foto-base64');
     var geoBtn = $('form-geo-btn');
 
-    if (photoInput) {
-      photoInput.addEventListener('change', function () {
+    // Webcam-easy integration
+    var webcamVideo = $('webcam');
+    var webcamCanvas = $('webcam-canvas');
+    var webcamStartBtn = $('webcam-start-btn');
+    var webcamCaptureBtn = $('webcam-capture-btn');
+    var webcamSwitchBtn = $('webcam-switch-btn');
+    var webcamRetakeBtn = $('webcam-retake-btn');
+    var webcamClearBtn = $('webcam-clear-btn');
+    var webcamInstance = null;
+
+    function getWebcam() {
+      if (!webcamInstance && webcamVideo && webcamCanvas) {
+        webcamInstance = new Webcam(webcamVideo, 'user', webcamCanvas);
+      }
+      return webcamInstance;
+    }
+
+    if (webcamStartBtn) {
+      webcamStartBtn.addEventListener('click', function () {
         setText($('form-photo-msg'), '');
-        if (!photoInput.files || photoInput.files.length === 0) {
-          if (photoBase64) photoBase64.value = '';
-          if (photoPreview) show(photoPreview, false);
-          return;
+        var wc = getWebcam();
+        if (!wc) return;
+        wc.start()
+          .then(function () {
+            show(webcamVideo, true);
+            show(webcamStartBtn, false);
+            show(webcamCaptureBtn, true);
+            show(webcamSwitchBtn, true);
+          })
+          .catch(function (err) {
+            setText($('form-photo-msg'), 'No se pudo acceder a la cámara: ' + (err && err.message ? err.message : err));
+          });
+      });
+    }
+
+    if (webcamCaptureBtn) {
+      webcamCaptureBtn.addEventListener('click', function () {
+        var wc = getWebcam();
+        if (!wc) return;
+        var picture = wc.snap();
+        wc.stop();
+        if (photoBase64) photoBase64.value = picture;
+        if (photoPreview) {
+          photoPreview.src = picture;
+          show(photoPreview, true);
         }
-        var file = photoInput.files[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-          setText($('form-photo-msg'), 'La foto supera 2MB. Usa una imagen mas pequena.');
-          if (photoBase64) photoBase64.value = '';
-          if (photoPreview) show(photoPreview, false);
-          return;
-        }
-        var reader = new FileReader();
-        reader.onload = function () {
-          var result = reader.result;
-          if (typeof result !== 'string') return;
-          if (photoBase64) photoBase64.value = result;
-          if (photoPreview) {
-            photoPreview.src = result;
-            show(photoPreview, true);
-          }
-        };
-        reader.readAsDataURL(file);
+        show(webcamVideo, false);
+        show(webcamCaptureBtn, false);
+        show(webcamSwitchBtn, false);
+        show(webcamRetakeBtn, true);
+        show(webcamClearBtn, true);
+        setText($('form-photo-msg'), '');
+      });
+    }
+
+    if (webcamSwitchBtn) {
+      webcamSwitchBtn.addEventListener('click', function () {
+        var wc = getWebcam();
+        if (wc) wc.flip();
+      });
+    }
+
+    if (webcamRetakeBtn) {
+      webcamRetakeBtn.addEventListener('click', function () {
+        if (photoBase64) photoBase64.value = '';
+        show(photoPreview, false);
+        show(webcamRetakeBtn, false);
+        show(webcamClearBtn, false);
+        var wc = getWebcam();
+        if (!wc) return;
+        wc.start()
+          .then(function () {
+            show(webcamVideo, true);
+            show(webcamCaptureBtn, true);
+            show(webcamSwitchBtn, true);
+          })
+          .catch(function (err) {
+            setText($('form-photo-msg'), 'No se pudo acceder a la cámara: ' + (err && err.message ? err.message : err));
+            show(webcamStartBtn, true);
+          });
+      });
+    }
+
+    if (webcamClearBtn) {
+      webcamClearBtn.addEventListener('click', function () {
+        var wc = getWebcam();
+        if (wc) wc.stop();
+        if (photoBase64) photoBase64.value = '';
+        show(photoPreview, false);
+        show(webcamRetakeBtn, false);
+        show(webcamClearBtn, false);
+        show(webcamStartBtn, true);
+        setText($('form-photo-msg'), '');
       });
     }
 
@@ -514,16 +594,24 @@
           return;
         }
         geoBtn.disabled = true;
+        setText(msgEl, 'Obteniendo ubicacion...');
         navigator.geolocation.getCurrentPosition(function (pos) {
           var lat = pos && pos.coords ? pos.coords.latitude : null;
           var lng = pos && pos.coords ? pos.coords.longitude : null;
           if (latEl) latEl.value = lat != null ? String(lat) : '';
           if (lngEl) lngEl.value = lng != null ? String(lng) : '';
           setText(msgEl, 'Ubicacion capturada.');
-        }, function () {
-          setText(msgEl, 'No se pudo obtener la ubicacion.');
-        }, { enableHighAccuracy: true, timeout: 10000 });
-        setTimeout(function () { geoBtn.disabled = false; }, 1200);
+          geoBtn.disabled = false;
+        }, function (err) {
+          var reasons = {
+            1: 'Permiso denegado. Permite el acceso a la ubicacion en tu navegador.',
+            2: 'Ubicacion no disponible. Verifica que el GPS este activo.',
+            3: 'Tiempo de espera agotado. Intenta de nuevo.'
+          };
+          var msg = reasons[err && err.code] || ('Error desconocido: ' + (err && err.message ? err.message : ''));
+          setText(msgEl, msg);
+          geoBtn.disabled = false;
+        }, { enableHighAccuracy: true, timeout: 15000 });
       });
     }
 
@@ -650,17 +738,35 @@
           showLoginModal();
           return;
         }
-        var all = readFormularios();
-        var mine = all.filter(function (f) {
-          return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase();
+        if (!confirm('Eliminar todas tus encuestas (locales y del servidor)?')) return;
+
+        clearBtn.disabled = true;
+
+        // Eliminar del servidor primero, luego limpiar localStorage
+        fetch('/api/formularios/usuario/' + encodeURIComponent(auth.username), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + auth.token
+          }
+        }).then(function (r) {
+          if (!r.ok) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+              throw new Error((d && d.error) ? d.error : 'Error del servidor (' + r.status + ')');
+            });
+          }
+          // Servidor limpiado — ahora limpiar localStorage
+          var all = readFormularios();
+          var rest = all.filter(function (f) {
+            return String(f.usuarioRegistro || '').toLowerCase() !== String(auth.username).toLowerCase();
+          });
+          writeFormularios(rest);
+          renderList();
+          renderSyncBadge();
+        }).catch(function (err) {
+          alert('Error al limpiar encuestas: ' + (err && err.message ? err.message : err));
+        }).finally(function () {
+          clearBtn.disabled = false;
         });
-        if (mine.length === 0) return;
-        if (!confirm('Eliminar todas tus encuestas locales?')) return;
-        var rest = all.filter(function (f) {
-          return String(f.usuarioRegistro || '').toLowerCase() !== String(auth.username).toLowerCase();
-        });
-        writeFormularios(rest);
-        renderList();
       });
     }
 
@@ -692,20 +798,23 @@
         // Iniciar sincronización vía WebSocket (sync-worker.js)
         initiateSyncViaWebSocket(auth.token, pending, function (success, result) {
           syncBtn.disabled = false;
+          syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
           if (success) {
-            // Actualizar formularios como sincronizados en localStorage
-            for (var i = 0; i < pending.length; i++) {
-              pending[i].sincronizado = true;
+            // Marcar como sincronizados los IDs confirmados por el servidor
+            var savedIds = (result && Array.isArray(result.idsGuardados)) ? result.idsGuardados : [];
+            var savedSet = {};
+            for (var i = 0; i < savedIds.length; i++) savedSet[String(savedIds[i])] = true;
+            for (var j = 0; j < all.length; j++) {
+              if (savedSet[String(all[j].id)]) all[j].sincronizado = true;
             }
             writeFormularios(all);
-            setText(syncBtn, '');
-            syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
             renderList();
-            alert('Encuestas sincronizadas exitosamente.');
+            renderSyncBadge();
+            alert('Encuestas sincronizadas exitosamente (' + savedIds.length + ').');
           } else {
-            setText(syncBtn, '');
-            syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
-            alert('Error en la sincronización: ' + (result || 'Error desconocido'));
+            var msg = typeof result === 'string' ? result
+              : (result && result.errores ? result.errores + ' error(es) al sincronizar.' : 'Error desconocido');
+            alert('Error en la sincronizacion: ' + msg);
           }
         });
       });
@@ -735,6 +844,7 @@
 
     // Enviar datos al worker
     worker.postMessage({
+      type: 'SYNC',
       token: token,
       formularios: pendingFormularios,
       wsUrl: wsUrl
@@ -744,7 +854,12 @@
     worker.onmessage = function (event) {
       var response = event.data;
       worker.terminate();
-      callback(response.success, response.message);
+      if (response.type === 'SYNC_RESULT') {
+        var ok = response.result && response.result.exito;
+        callback(!!ok, response.result);
+      } else {
+        callback(false, (response && response.message) || 'Error desconocido');
+      }
     };
 
     worker.onerror = function (err) {
@@ -767,7 +882,7 @@
   function syncDirectly(token, pendingFormularios, callback) {
     // Fallback: sincronización directa vía WebSocket sin Web Worker
     var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var wsUrl = wsProtocol + '//' + window.location.host + '/sync';
+    var wsUrl = wsProtocol + '//' + window.location.host + '/sync?token=' + encodeURIComponent(token);
     var ws;
 
     try {
@@ -779,21 +894,17 @@
     }
 
     ws.onopen = function () {
-      var message = {
-        token: token,
-        action: 'sync',
-        formularios: pendingFormularios
-      };
-      ws.send(JSON.stringify(message));
+      // El servidor espera directamente el array de formularios
+      ws.send(JSON.stringify(pendingFormularios));
     };
 
     ws.onmessage = function (event) {
       try {
         var response = JSON.parse(event.data);
-        if (response.success) {
-          callback(true, response.message);
+        if (response.exito) {
+          callback(true, response);
         } else {
-          callback(false, response.message || 'Error en la sincronización');
+          callback(false, response.error || 'Error en la sincronizacion');
         }
       } catch (err) {
         callback(false, 'Error al procesar respuesta del servidor');
@@ -816,6 +927,128 @@
     }, 15000);
   }
 
+  function wireEditModal() {
+    var tbody   = $('formularios-tbody');
+    var form    = $('edit-form');
+    if (!tbody || !form) return;
+
+    // Abrir modal al hacer click en Editar
+    tbody.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.classList || !t.classList.contains('mu-form-edit')) return;
+
+      var tr = t.closest('tr');
+      if (!tr) return;
+
+      $('edit-id').value     = tr.getAttribute('data-id')     || '';
+      $('edit-synced').value = tr.getAttribute('data-synced') || 'false';
+      $('edit-nombre').value = tr.getAttribute('data-nombre') || '';
+      $('edit-sector').value = tr.getAttribute('data-sector') || '';
+      $('edit-nivel').value  = tr.getAttribute('data-nivel')  || '';
+      $('edit-latitud').value  = tr.getAttribute('data-lat')  || '';
+      $('edit-longitud').value = tr.getAttribute('data-lng')  || '';
+
+      setText($('edit-error'), '');
+      show($('edit-error'), false);
+
+      if (window.jQuery && window.jQuery.fn.modal) {
+        window.jQuery('#editModal').modal('show');
+      }
+    });
+
+    // Submit modal
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var id     = $('edit-id').value;
+      var synced = $('edit-synced').value === 'true';
+      var nombre = $('edit-nombre').value.trim();
+      var sector = $('edit-sector').value.trim();
+      var nivel  = $('edit-nivel').value;
+      var lat    = $('edit-latitud').value.trim();
+      var lng    = $('edit-longitud').value.trim();
+
+      if (!nombre || !sector || !nivel) {
+        setText($('edit-error'), 'Nombre, sector y nivel son requeridos.');
+        show($('edit-error'), true);
+        return;
+      }
+
+      var latNum = lat !== '' ? Number(lat) : null;
+      var lngNum = lng !== '' ? Number(lng) : null;
+      if (lat !== '' && !isFinite(latNum)) {
+        setText($('edit-error'), 'Latitud invalida.');
+        show($('edit-error'), true);
+        return;
+      }
+      if (lng !== '' && !isFinite(lngNum)) {
+        setText($('edit-error'), 'Longitud invalida.');
+        show($('edit-error'), true);
+        return;
+      }
+
+      var submitBtn = $('edit-submit');
+      if (submitBtn) submitBtn.disabled = true;
+
+      if (synced) {
+        // Registro del servidor: llamar PUT
+        var auth = getAuth();
+        if (!auth) {
+          setText($('edit-error'), 'Sesion expirada. Inicia sesion nuevamente.');
+          show($('edit-error'), true);
+          if (submitBtn) submitBtn.disabled = false;
+          return;
+        }
+        fetch('/api/formularios/' + encodeURIComponent(id), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + auth.token
+          },
+          body: JSON.stringify({
+            nombre: nombre,
+            sector: sector,
+            nivelEscolar: nivel,
+            latitud: latNum,
+            longitud: lngNum
+          })
+        }).then(function (r) {
+          if (r.ok) {
+            if (window.jQuery && window.jQuery.fn.modal) window.jQuery('#editModal').modal('hide');
+            renderList();
+          } else {
+            return r.json().then(function (d) {
+              setText($('edit-error'), (d && d.error) ? d.error : 'Error al actualizar (' + r.status + ').');
+              show($('edit-error'), true);
+            });
+          }
+        }).catch(function () {
+          setText($('edit-error'), 'No se pudo conectar al servidor.');
+          show($('edit-error'), true);
+        }).finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+      } else {
+        // Registro local pendiente: actualizar localStorage
+        var all = readFormularios();
+        for (var i = 0; i < all.length; i++) {
+          if (String(all[i].id) === String(id)) {
+            all[i].nombre      = nombre;
+            all[i].sector      = sector;
+            all[i].nivelEscolar = nivel;
+            all[i].latitud     = latNum;
+            all[i].longitud    = lngNum;
+            break;
+          }
+        }
+        writeFormularios(all);
+        if (window.jQuery && window.jQuery.fn.modal) window.jQuery('#editModal').modal('hide');
+        if (submitBtn) submitBtn.disabled = false;
+        renderList();
+      }
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     // If auth is invalid/expired, drop it.
     if (!getAuth()) clearAuth();
@@ -834,6 +1067,7 @@
 
     wireAuth();
     wireCreate();
+    wireEditModal();
     wireListActions();
     renderAuth();
     renderList();

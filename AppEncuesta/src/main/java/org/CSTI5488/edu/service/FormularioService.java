@@ -25,7 +25,25 @@ public class FormularioService {
         return formularioRepository.findByUsuario(username);
     }
 
+    public Formulario buscarPorId(String id) {
+        return formularioRepository.findById(id);
+    }
+
+    public boolean actualizar(String id, Formulario formulario) {
+        return formularioRepository.update(id, formulario);
+    }
+
     public List<Formulario> listarConCoordenadas() {
         return formularioRepository.findWithCoords();
+    }
+
+    /** Elimina todos los formularios de un usuario. Retorna cuantos se eliminaron. */
+    public long eliminarPorUsuario(String username) {
+        return formularioRepository.deleteByUsuario(username);
+    }
+
+    /** Verifica si un formulario con este ID local ya fue sincronizado por el usuario. */
+    public boolean existePorLocalId(String localId, String username) {
+        return formularioRepository.existsByLocalId(localId, username);
     }
 }

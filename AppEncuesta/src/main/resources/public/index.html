@@ -143,11 +143,32 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="form-foto">Foto (opcional)</label>
-                  <input type="file" id="form-foto" accept="image/*" class="form-control">
+                  <label>Foto (opcional)</label>
                   <input type="hidden" id="form-foto-base64">
-                  <div id="form-photo-msg" class="text-muted" style="margin-top:6px;"></div>
-                  <img id="form-foto-preview" class="mu-form-preview" src="" alt="preview" style="display:none">
+                  <div id="webcam-container">
+                    <video id="webcam" autoplay playsinline width="320" height="240"
+                           style="display:none; border-radius:4px; max-width:100%;"></video>
+                    <canvas id="webcam-canvas" style="display:none;"></canvas>
+                    <img id="form-foto-preview" class="mu-form-preview" src="" alt="preview" style="display:none;">
+                    <div style="margin-top:8px;">
+                      <button type="button" id="webcam-start-btn" class="btn btn-default btn-sm">
+                        <i class="fa fa-camera"></i> Abrir cámara
+                      </button>
+                      <button type="button" id="webcam-capture-btn" class="btn btn-primary btn-sm" style="display:none;">
+                        <i class="fa fa-circle"></i> Capturar
+                      </button>
+                      <button type="button" id="webcam-switch-btn" class="btn btn-default btn-sm" style="display:none;">
+                        <i class="fa fa-refresh"></i> Cambiar cámara
+                      </button>
+                      <button type="button" id="webcam-retake-btn" class="btn btn-default btn-sm" style="display:none;">
+                        <i class="fa fa-repeat"></i> Retomar
+                      </button>
+                      <button type="button" id="webcam-clear-btn" class="btn btn-default btn-sm" style="display:none;">
+                        <i class="fa fa-times"></i> Quitar foto
+                      </button>
+                    </div>
+                    <div id="form-photo-msg" class="text-muted" style="margin-top:6px;"></div>
+                  </div>
                 </div>
 
                 <button type="submit" class="mu-send-msg-btn btn btn-primary" style="width:auto;">
@@ -234,9 +255,64 @@
       </div>
     </div>
 
+    <!-- Modal editar formulario -->
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="editModalLabel">Editar encuesta</h4>
+          </div>
+          <div class="modal-body">
+            <div id="edit-error" class="alert alert-danger" style="display:none"></div>
+            <form id="edit-form">
+              <input type="hidden" id="edit-id">
+              <input type="hidden" id="edit-synced">
+              <div class="form-group">
+                <label for="edit-nombre">Nombre</label>
+                <input type="text" class="form-control" id="edit-nombre" maxlength="150" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-sector">Sector</label>
+                <input type="text" class="form-control" id="edit-sector" maxlength="150" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-nivel">Nivel escolar</label>
+                <select class="form-control" id="edit-nivel" required>
+                  <option value="BASICO">BASICO</option>
+                  <option value="MEDIO">MEDIO</option>
+                  <option value="GRADO_UNIVERSITARIO">GRADO_UNIVERSITARIO</option>
+                  <option value="POSTGRADO">POSTGRADO</option>
+                  <option value="DOCTORADO">DOCTORADO</option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="col-xs-6">
+                  <div class="form-group">
+                    <label for="edit-latitud">Latitud</label>
+                    <input type="text" class="form-control" id="edit-latitud" placeholder="Opcional">
+                  </div>
+                </div>
+                <div class="col-xs-6">
+                  <div class="form-group">
+                    <label for="edit-longitud">Longitud</label>
+                    <input type="text" class="form-control" id="edit-longitud" placeholder="Opcional">
+                  </div>
+                </div>
+              </div>
+              <button type="submit" id="edit-submit" class="btn btn-primary btn-block">
+                <i class="fa fa-save"></i> Guardar cambios
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Vendor (Bootstrap 3 requiere jQuery) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
 
     <!-- App -->
     <script src="js/models.js"></script>

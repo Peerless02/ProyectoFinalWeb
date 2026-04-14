@@ -88,8 +88,7 @@
                 <select class="form-control" id="role-filter">
                   <option value="">Todos los roles</option>
                   <option value="ADMIN">ADMIN</option>
-                  <option value="ESTUDIANTE">ESTUDIANTE</option>
-                  <option value="ORGANIZADOR">ORGANIZADOR</option>
+                  <option value="ENCUESTADOR">ENCUESTADOR</option>
                   <option value="__NULL__">SIN ROL</option>
                 </select>
               </div>
@@ -157,8 +156,7 @@
                 <label for="cu-role">Rol</label>
                 <select class="form-control" id="cu-role" name="rol" required>
                   <option value="ADMIN">ADMIN</option>
-                  <option value="ESTUDIANTE">ESTUDIANTE</option>
-                  <option value="ORGANIZADOR">ORGANIZADOR</option>
+                  <option value="ENCUESTADOR" selected>ENCUESTADOR</option>
                 </select>
               </div>
               <button type="submit" class="btn btn-success btn-block">Crear</button>
@@ -259,8 +257,7 @@
           var roleOptions = [
             { v: '', t: 'SIN ROL' },
             { v: 'ADMIN', t: 'ADMIN' },
-            { v: 'ESTUDIANTE', t: 'ESTUDIANTE' },
-            { v: 'ORGANIZADOR', t: 'ORGANIZADOR' }
+            { v: 'ENCUESTADOR', t: 'ENCUESTADOR' }
           ].map(function (opt) {
             var selected = (opt.v === '' && u.rol === null) || (opt.v !== '' && u.rol === opt.v) ? 'selected' : '';
             return '<option value="' + opt.v + '" ' + selected + '>' + opt.t + '</option>';
