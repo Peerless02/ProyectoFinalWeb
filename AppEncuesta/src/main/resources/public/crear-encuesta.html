@@ -208,58 +208,23 @@
     <script src="js/models.js"></script>
     <script src="js/encuestas.js"></script>
 
-    <!-- Página crear-encuesta específica -->
+    <!--
+      Página crear-encuesta específica:
+      - Auto-GPS al cargar (rellena lat/lng automáticamente)
+      - Carga plantillas extra si existen
+      - forceUpdateUI: muestra login modal si no hay sesión
+      NOTA: La lógica de submit del formulario la maneja encuestas.js (wireCreate).
+      No duplicamos el handler aquí para evitar doble-guardado.
+    -->
     <script>
     (function() {
       'use strict';
 
-      var auth = null;
-      var gpsStatus = 'Esperando...';
-      var currentLat = null;
-      var currentLng = null;
-      var plantillaActual = null;
-
-      // Elementos del DOM
-      var formElement = document.getElementById('formulario-form');
-      var authModal = document.getElementById('authModal');
-      var authButton = document.getElementById('auth-button');
-      var authGate = document.getElementById('auth-gate');
-      var formError = document.getElementById('form-error');
-      var formSuccess = document.getElementById('form-success');
-      var gpsStatusEl = null; // Se crea dinámicamente
+      var gpsStatusEl = null;
       var latitudInput = document.getElementById('form-latitud');
       var longitudInput = document.getElementById('form-longitud');
-      var fotoBase64Input = document.getElementById('form-foto-base64');
-      var fotoPreview = document.getElementById('form-foto-preview');
-      var formGeoBtn = document.getElementById('form-geo-btn');
-      var formGeoMsg = document.getElementById('form-geo-msg');
-
-      function showAuthModal() {
-        if (typeof jQuery !== 'undefined') {
-          jQuery('#authModal').modal('show');
-        }
-      }
-
-      function hideAuthModal() {
-        if (typeof jQuery !== 'undefined') {
-          jQuery('#authModal').modal('hide');
-        }
-      }
-
-      function forceUpdateUI() {
-        auth = getAuthLocal();
-        if (!auth) {
-          show(authGate, true);
-          show(formElement, false);
-          showAuthModal();
-        } else {
-          show(authGate, false);
-          show(formElement, true);
-          hideAuthModal();
-          initGPS();
-          loadPlantilla();
-        }
-      }
+      var formElement = document.getElementById('formulario-form');
+      var authGate = document.getElementById('auth-gate');
 
       function getAuthLocal() {
         try {
@@ -283,8 +248,9 @@
         el.textContent = txt == null ? '' : String(txt);
       }
 
-      // GPS
+      // Auto-obtener GPS al cargar la página
       function initGPS() {
+        if (!latitudInput) return;
         if (!gpsStatusEl) {
           gpsStatusEl = document.createElement('div');
           gpsStatusEl.id = 'gps-status';
@@ -299,11 +265,11 @@
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             function(position) {
-              currentLat = position.coords.latitude;
-              currentLng = position.coords.longitude;
-              latitudInput.value = currentLat.toFixed(6);
-              longitudInput.value = currentLng.toFixed(6);
-              setText(gpsStatusEl, 'Ubicación obtenida: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4));
+              var lat = position.coords.latitude;
+              var lng = position.coords.longitude;
+              latitudInput.value = lat.toFixed(6);
+              longitudInput.value = lng.toFixed(6);
+              setText(gpsStatusEl, 'Ubicación obtenida: ' + lat.toFixed(4) + ', ' + lng.toFixed(4));
             },
             function(error) {
               setText(gpsStatusEl, 'Error GPS: ' + error.message);
@@ -314,30 +280,17 @@
         }
       }
 
-      // Manual geo button
-      if (formGeoBtn) {
-        formGeoBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          initGPS();
-        });
-      }
-
-      // La logica de camara se maneja en encuestas.js (wireWebcam)
-
-      // Cargar plantilla default
+      // Cargar plantilla extra si existe
       function loadPlantilla() {
         var authLocal = getAuthLocal();
         if (!authLocal) return;
 
-        fetch('/api/plantillas', { 
+        fetch('/api/plantillas', {
           credentials: 'same-origin',
           headers: { 'Authorization': 'Bearer ' + authLocal.token }
         })
           .then(function(r) {
-            if (r.status === 401 || r.status === 403) {
-              console.log('No autorizado para plantillas');
-              return null;
-            }
+            if (r.status === 401 || r.status === 403) return null;
             return r.json();
           })
           .then(function(data) {
@@ -350,14 +303,11 @@
                 break;
               }
             }
-
             if (!defaultPlantilla && data.length > 0) {
               defaultPlantilla = data[0];
             }
-
             if (defaultPlantilla) {
-              plantillaActual = defaultPlantilla;
-              renderCamposExtra(defaultPlantilla.campos || []);
+              renderCamposExtra(defaultPlantilla.camposExtra || defaultPlantilla.campos || []);
             }
           })
           .catch(function(err) {
@@ -365,14 +315,14 @@
           });
       }
 
-      // Renderizar campos extra
+      // Renderizar campos extra de la plantilla
       function renderCamposExtra(campos) {
         var container = document.getElementById('campos-extra');
         if (!container) {
           container = document.createElement('div');
           container.id = 'campos-extra';
           container.style.marginTop = '20px';
-          formElement.appendChild(container);
+          if (formElement) formElement.appendChild(container);
         }
 
         if (!campos || campos.length === 0) {
@@ -387,7 +337,6 @@
           var fieldId = 'campo-' + (campo.id || campo.nombre);
           var label = campo.nombre || 'Campo';
           var required = campo.requerido ? ' required' : '';
-          var value = campo.valor || '';
 
           if (type === 'text' || type === 'email' || type === 'number') {
             html += '<div class="form-group">';
@@ -417,133 +366,17 @@
         container.innerHTML = html;
       }
 
-      // Helper para leer/escribir formularios
-      function readFormulariosLocal() {
-        try {
-          var raw = localStorage.getItem('appencuesta.formularios');
-          var arr = raw ? JSON.parse(raw) : [];
-          return Array.isArray(arr) ? arr : [];
-        } catch (e) {
-          return [];
+      function forceUpdateUI() {
+        var auth = getAuthLocal();
+        if (!auth) {
+          show(authGate, true);
+          show(formElement, false);
+        } else {
+          show(authGate, false);
+          show(formElement, true);
+          initGPS();
+          loadPlantilla();
         }
-      }
-
-      function writeFormulariosLocal(arr) {
-        localStorage.setItem('appencuesta.formularios', JSON.stringify(arr || []));
-      }
-
-      // Submit
-      if (formElement) {
-        formElement.addEventListener('submit', function(e) {
-          e.preventDefault();
-
-          var nombre = document.getElementById('form-nombre').value.trim();
-          var sector = document.getElementById('form-sector').value.trim();
-          var nivelEscolar = document.getElementById('form-nivel').value;
-          var fotob64 = fotoBase64Input.value || '';
-
-          if (!nombre || !sector || !nivelEscolar) {
-            show(formError, true);
-            setText(formError, 'Por favor completa todos los campos requeridos.');
-            return;
-          }
-
-          // Recolectar campos extra
-          var camposExtra = [];
-          var campoExtraEls = document.querySelectorAll('.campo-extra');
-          campoExtraEls.forEach(function(el) {
-            camposExtra.push({
-              id: el.getAttribute('data-id'),
-              valor: el.value
-            });
-          });
-
-          // Construir payload
-          var payload = {
-            nombre: nombre,
-            sector: sector,
-            nivelEscolar: nivelEscolar,
-            usuarioRegistro: 'usuario-local', // Por ahora
-            latitud: currentLat || null,
-            longitud: currentLng || null,
-            fotoBase64: fotob64,
-            camposExtra: camposExtra,
-            sincronizado: false
-          };
-
-          // Guardar en localStorage
-          var formularios = readFormulariosLocal();
-          payload.id = 'form-' + Date.now() + '-' + Math.random().toString(16).slice(2);
-          payload.fechaRegistro = new Date().toISOString();
-          formularios.push(payload);
-          writeFormulariosLocal(formularios);
-
-          // Intentar sincronizar
-          var authLocal = getAuthLocal();
-          if (authLocal && authLocal.token) {
-            fetch('/api/formularios', {
-              method: 'POST',
-              credentials: 'same-origin',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + authLocal.token
-              },
-              body: JSON.stringify(payload)
-            })
-            .then(function(r) {
-              if (r.status === 201) {
-                show(formError, false);
-                show(formSuccess, true);
-                setText(formSuccess, '✓ Encuesta guardada exitosamente.');
-                formElement.reset();
-                if (fotoBase64Input) fotoBase64Input.value = '';
-                show(fotoPreview, false);
-                // Marcar como sincronizado
-                formularios = readFormulariosLocal();
-                for (var i = 0; i < formularios.length; i++) {
-                  if (formularios[i].id === payload.id) {
-                    formularios[i].sincronizado = true;
-                    break;
-                  }
-                }
-                writeFormulariosLocal(formularios);
-                setTimeout(function() { show(formSuccess, false); }, 3000);
-                return;
-              }
-              throw new Error('Error ' + r.status);
-            })
-            .catch(function(err) {
-              console.log('Sincronización fallida, guardada localmente:', err);
-              show(formError, false);
-              show(formSuccess, true);
-              setText(formSuccess, '✓ Encuesta guardada localmente. Se sincronizará cuando tengas conexión.');
-              formElement.reset();
-              fotoPreview.style.display = 'none';
-              setTimeout(function() { show(formSuccess, false); }, 3000);
-            });
-          } else {
-            show(formError, false);
-            show(formSuccess, true);
-            setText(formSuccess, '✓ Encuesta guardada localmente. Inicia sesión para sincronizar.');
-            formElement.reset();
-            fotoPreview.style.display = 'none';
-            setTimeout(function() { show(formSuccess, false); }, 3000);
-          }
-        });
-      }
-
-      // Handler para botón de logout/login
-      if (authButton) {
-        authButton.addEventListener('click', function() {
-          var authLocal = getAuthLocal();
-          if (authLocal) {
-            localStorage.removeItem('appencuesta.auth');
-            auth = null;
-            forceUpdateUI();
-          } else {
-            showAuthModal();
-          }
-        });
       }
 
       // Inicializar al cargar
@@ -551,25 +384,12 @@
         forceUpdateUI();
       });
 
-      // Observar cambios en el storage (para cuando el login se complete en otro script)
+      // Observar cambios en el storage (para cuando el login se complete desde encuestas.js)
       window.addEventListener('storage', function(e) {
         if (e.key === 'appencuesta.auth') {
           setTimeout(function() { forceUpdateUI(); }, 100);
         }
       });
-
-      // Exposición de funciones globales (por compatibilidad)
-      if (typeof window.getAuthLocal === 'undefined') {
-        window.getAuthLocal = getAuthLocal;
-      }
-
-      if (typeof window.readFormulariosLocal === 'undefined') {
-        window.readFormulariosLocal = readFormulariosLocal;
-      }
-
-      if (typeof window.writeFormulariosLocal === 'undefined') {
-        window.writeFormulariosLocal = writeFormulariosLocal;
-      }
     })();
     </script>
 
