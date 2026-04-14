@@ -746,7 +746,9 @@
           showLoginModal();
           return;
         }
-        if (!confirm('Eliminar todas tus encuestas (locales y del servidor)?')) return;
+        // Abrir modal para elegir qué encuestas eliminar.
+        showClearModal();
+        return;
 
         clearBtn.disabled = true;
 
@@ -826,6 +828,243 @@
           }
         });
       });
+    }
+  }
+
+  // Modal para elegir que encuestas borrar al usar "Limpiar mis encuestas".
+  var _clearModalWired = false;
+  var _clearEls = null;
+
+  function wireClearModal() {
+    if (_clearModalWired) return;
+
+    var modalEl = $('clearModal');
+    var tbody = $('clear-tbody');
+    var selectAll = $('clear-select-all');
+    var delBtn = $('clear-delete-btn');
+    var errBox = $('clear-error');
+    var selectedCount = $('clear-selected-count');
+    if (!modalEl || !tbody || !selectAll || !delBtn) return;
+
+    _clearModalWired = true;
+    _clearEls = {
+      modalEl: modalEl,
+      tbody: tbody,
+      selectAll: selectAll,
+      delBtn: delBtn,
+      errBox: errBox,
+      selectedCount: selectedCount
+    };
+
+    function setError(msg) {
+      if (!errBox) return;
+      setText(errBox, msg || '');
+      show(errBox, !!msg);
+    }
+
+    function updateSelectedCount() {
+      if (!selectedCount) return;
+      var checks = tbody.querySelectorAll('input[type="checkbox"].clear-item');
+      var n = 0;
+      for (var i = 0; i < checks.length; i++) if (checks[i].checked) n++;
+      setText(selectedCount, String(n));
+    }
+
+    selectAll.addEventListener('change', function () {
+      var checks = tbody.querySelectorAll('input[type="checkbox"].clear-item');
+      for (var i = 0; i < checks.length; i++) checks[i].checked = !!selectAll.checked;
+      updateSelectedCount();
+    });
+
+    tbody.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.classList || !t.classList.contains('clear-item')) return;
+      updateSelectedCount();
+    });
+
+    delBtn.addEventListener('click', function () {
+      var auth = getAuth();
+      if (!auth) {
+        showLoginModal();
+        return;
+      }
+
+      setError('');
+
+      var checks = tbody.querySelectorAll('input[type="checkbox"].clear-item');
+      var serverIds = [];
+      var localIds = [];
+      for (var i = 0; i < checks.length; i++) {
+        if (!checks[i].checked) continue;
+        var tr = checks[i].closest ? checks[i].closest('tr') : null;
+        if (!tr) continue;
+        var id = tr.getAttribute('data-id') || '';
+        var source = tr.getAttribute('data-source') || '';
+        if (!id) continue;
+        if (source === 'server') serverIds.push(id);
+        else if (source === 'local') localIds.push(id);
+      }
+
+      if (serverIds.length === 0 && localIds.length === 0) {
+        setError('Selecciona al menos una encuesta.');
+        return;
+      }
+
+      if (!confirm('Eliminar ' + String(serverIds.length + localIds.length) + ' encuesta(s) seleccionada(s)?')) return;
+
+      delBtn.disabled = true;
+      delBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Eliminando...';
+
+      function deleteLocalSelected() {
+        if (localIds.length === 0) return;
+        var kill = {};
+        for (var i = 0; i < localIds.length; i++) kill[String(localIds[i])] = true;
+
+        var all = readFormularios();
+        var next = all.filter(function (f) {
+          var mine = String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase();
+          if (!mine) return true;
+          return !kill[String(f.id)];
+        });
+        writeFormularios(next);
+      }
+
+      function deleteServerSelected() {
+        if (serverIds.length === 0) return Promise.resolve();
+        var reqs = serverIds.map(function (id) {
+          return fetch('/api/formularios/' + encodeURIComponent(id), {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + auth.token }
+          }).then(function (r) {
+            if (r.ok) return;
+            return r.json().catch(function () { return {}; }).then(function (d) {
+              throw new Error((d && d.error) ? d.error : 'Error del servidor (' + r.status + ')');
+            });
+          });
+        });
+        return Promise.all(reqs);
+      }
+
+      deleteServerSelected().then(function () {
+        deleteLocalSelected();
+        if (window.jQuery && window.jQuery.fn.modal) window.jQuery('#clearModal').modal('hide');
+        renderList();
+        renderSyncBadge();
+      }).catch(function (err) {
+        deleteLocalSelected();
+        renderList();
+        renderSyncBadge();
+        setError('Error eliminando del servidor: ' + (err && err.message ? err.message : err));
+      }).finally(function () {
+        delBtn.disabled = false;
+        delBtn.innerHTML = '<i class="fa fa-trash"></i> Eliminar seleccionadas';
+      });
+    });
+
+    if (window.jQuery) {
+      window.jQuery('#clearModal').on('hidden.bs.modal', function () {
+        setError('');
+        tbody.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
+        selectAll.checked = true;
+        updateSelectedCount();
+      });
+    }
+  }
+
+  function showClearModal() {
+    wireClearModal();
+    if (!_clearEls) return;
+
+    var auth = getAuth();
+    if (!auth) {
+      showLoginModal();
+      return;
+    }
+
+    var tbody = _clearEls.tbody;
+    var selectAll = _clearEls.selectAll;
+    var errBox = _clearEls.errBox;
+    var selectedCount = _clearEls.selectedCount;
+
+    if (errBox) show(errBox, false);
+    tbody.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
+    selectAll.checked = true;
+    if (selectedCount) setText(selectedCount, '0');
+
+    function renderRows(items) {
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">No hay encuestas para limpiar.</td></tr>';
+        if (selectedCount) setText(selectedCount, '0');
+        return;
+      }
+
+      var out = '';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i] || {};
+        var id = String(it.id || '');
+        var nombre = it.nombre || '';
+        var estado = it.sincronizado ? 'Sincronizado' : 'Pendiente';
+        var estadoCls = it.sincronizado ? 'label-success' : 'label-warning';
+        var origen = it.source === 'server' ? 'Servidor' : 'Local';
+        var origenCls = it.source === 'server' ? 'label-primary' : 'label-default';
+
+        out += '<tr data-id="' + escapeHtml(id) + '" data-source="' + escapeHtml(it.source || '') + '">'
+          + '<td style="text-align:center;"><input class="clear-item" type="checkbox" checked></td>'
+          + '<td style="white-space:nowrap;">' + escapeHtml(id.slice(0, 8)) + '</td>'
+          + '<td>' + escapeHtml(nombre) + '</td>'
+          + '<td style="white-space:nowrap;"><span class="label ' + estadoCls + '">' + estado + '</span></td>'
+          + '<td style="white-space:nowrap;"><span class="label ' + origenCls + '">' + origen + '</span></td>'
+          + '</tr>';
+      }
+      tbody.innerHTML = out;
+      if (selectedCount) setText(selectedCount, String(items.length));
+    }
+
+    function loadItems(done) {
+      var all = readFormularios();
+      var localMine = all.filter(function (f) {
+        return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase();
+      });
+
+      var items = [];
+      for (var i = 0; i < localMine.length; i++) {
+        var lf = localMine[i] || {};
+        items.push({
+          id: lf.id,
+          nombre: lf.nombre || '',
+          sincronizado: !!lf.sincronizado,
+          source: 'local'
+        });
+      }
+
+      loadServerFormularios(auth.username, auth.token, function (serverFormularios) {
+        if (serverFormularios && serverFormularios.length) {
+          for (var j = 0; j < serverFormularios.length; j++) {
+            var sf = serverFormularios[j] || {};
+            items.push({
+              id: sf.id,
+              nombre: sf.nombre || '',
+              sincronizado: true,
+              source: 'server'
+            });
+          }
+        }
+
+        items.sort(function (a, b) {
+          if (a.source !== b.source) return a.source === 'server' ? -1 : 1;
+          return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+        });
+        done(items);
+      });
+    }
+
+    loadItems(function (items) {
+      renderRows(items);
+      selectAll.checked = true;
+    });
+
+    if (window.jQuery && window.jQuery.fn.modal) {
+      window.jQuery('#clearModal').modal('show');
     }
   }
 
@@ -1134,6 +1373,7 @@
     wireCreate();
     wireEditModal();
     wireListActions();
+    wireClearModal();
     wireMapModal();
     renderAuth();
     renderList();

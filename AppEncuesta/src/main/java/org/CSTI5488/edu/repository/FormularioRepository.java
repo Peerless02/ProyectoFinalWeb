@@ -101,6 +101,17 @@ public class FormularioRepository {
         return result.getDeletedCount();
     }
 
+    /** Elimina un formulario por su ObjectId. Retorna true si se eliminó. */
+    public boolean deleteById(String id) {
+        try {
+            ObjectId oid = new ObjectId(id);
+            var result = collection.deleteOne(Filters.eq("_id", oid));
+            return result.getDeletedCount() > 0;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     public List<Formulario> findWithCoords() {
         List<Formulario> resultado = new ArrayList<>();
         var filter = Filters.and(

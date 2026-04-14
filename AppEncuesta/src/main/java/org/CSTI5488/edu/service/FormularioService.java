@@ -42,6 +42,11 @@ public class FormularioService {
         return formularioRepository.deleteByUsuario(username);
     }
 
+    /** Elimina un formulario por ID. Retorna true si se eliminó. */
+    public boolean eliminarPorId(String id) {
+        return formularioRepository.deleteById(id);
+    }
+
     /** Verifica si un formulario con este ID local ya fue sincronizado por el usuario. */
     public boolean existePorLocalId(String localId, String username) {
         return formularioRepository.existsByLocalId(localId, username);

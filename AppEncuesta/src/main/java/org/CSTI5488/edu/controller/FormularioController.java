@@ -23,6 +23,7 @@ public class FormularioController {
     public void registerRoutes(Javalin app) {
         app.unsafe.routes.post("/api/formularios", this::crear);
         app.unsafe.routes.put("/api/formularios/{id}", this::actualizar);
+        app.unsafe.routes.delete("/api/formularios/{id}", this::eliminarPorId);
         app.unsafe.routes.get("/api/formularios/usuario/{username}", this::listarPorUsuario);
         app.unsafe.routes.get("/api/formularios/mapa", this::listarMapa);
         app.unsafe.routes.delete("/api/formularios/usuario/{username}", this::eliminarPorUsuario);
@@ -117,5 +118,29 @@ public class FormularioController {
 
         long eliminados = formularioService.eliminarPorUsuario(username);
         ctx.status(200).json(Map.of("mensaje", "Encuestas eliminadas", "eliminados", eliminados));
+    }
+
+    /** DELETE /api/formularios/{id} — elimina una encuesta del usuario autenticado. */
+    private void eliminarPorId(Context ctx) {
+        DecodedJWT jwt = validarToken(ctx);
+        if (jwt == null) return;
+
+        String id = ctx.pathParam("id");
+        Formulario existente = formularioService.buscarPorId(id);
+        if (existente == null) {
+            ctx.status(404).json(Map.of("error", "Formulario no encontrado"));
+            return;
+        }
+        if (!jwt.getSubject().equals(existente.getUsuarioRegistro())) {
+            ctx.status(403).json(Map.of("error", "No autorizado para eliminar este formulario"));
+            return;
+        }
+
+        boolean ok = formularioService.eliminarPorId(id);
+        if (ok) {
+            ctx.status(200).json(Map.of("mensaje", "Formulario eliminado"));
+        } else {
+            ctx.status(400).json(Map.of("error", "No se pudo eliminar el formulario"));
+        }
     }
 }
