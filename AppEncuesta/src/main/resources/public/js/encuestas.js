@@ -755,20 +755,23 @@
         // Iniciar sincronización vía WebSocket (sync-worker.js)
         initiateSyncViaWebSocket(auth.token, pending, function (success, result) {
           syncBtn.disabled = false;
+          syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
           if (success) {
-            // Actualizar formularios como sincronizados en localStorage
-            for (var i = 0; i < pending.length; i++) {
-              pending[i].sincronizado = true;
+            // Marcar como sincronizados los IDs confirmados por el servidor
+            var savedIds = (result && Array.isArray(result.idsGuardados)) ? result.idsGuardados : [];
+            var savedSet = {};
+            for (var i = 0; i < savedIds.length; i++) savedSet[String(savedIds[i])] = true;
+            for (var j = 0; j < all.length; j++) {
+              if (savedSet[String(all[j].id)]) all[j].sincronizado = true;
             }
             writeFormularios(all);
-            setText(syncBtn, '');
-            syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
             renderList();
-            alert('Encuestas sincronizadas exitosamente.');
+            renderSyncBadge();
+            alert('Encuestas sincronizadas exitosamente (' + savedIds.length + ').');
           } else {
-            setText(syncBtn, '');
-            syncBtn.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar pendientes';
-            alert('Error en la sincronización: ' + (result || 'Error desconocido'));
+            var msg = typeof result === 'string' ? result
+              : (result && result.errores ? result.errores + ' error(es) al sincronizar.' : 'Error desconocido');
+            alert('Error en la sincronizacion: ' + msg);
           }
         });
       });
@@ -798,6 +801,7 @@
 
     // Enviar datos al worker
     worker.postMessage({
+      type: 'SYNC',
       token: token,
       formularios: pendingFormularios,
       wsUrl: wsUrl
@@ -807,7 +811,12 @@
     worker.onmessage = function (event) {
       var response = event.data;
       worker.terminate();
-      callback(response.success, response.message);
+      if (response.type === 'SYNC_RESULT') {
+        var ok = response.result && response.result.exito;
+        callback(!!ok, response.result);
+      } else {
+        callback(false, (response && response.message) || 'Error desconocido');
+      }
     };
 
     worker.onerror = function (err) {
@@ -842,21 +851,17 @@
     }
 
     ws.onopen = function () {
-      var message = {
-        token: token,
-        action: 'sync',
-        formularios: pendingFormularios
-      };
-      ws.send(JSON.stringify(message));
+      // El servidor espera directamente el array de formularios
+      ws.send(JSON.stringify(pendingFormularios));
     };
 
     ws.onmessage = function (event) {
       try {
         var response = JSON.parse(event.data);
-        if (response.success) {
-          callback(true, response.message);
+        if (response.exito) {
+          callback(true, response);
         } else {
-          callback(false, response.message || 'Error en la sincronización');
+          callback(false, response.error || 'Error en la sincronizacion');
         }
       } catch (err) {
         callback(false, 'Error al procesar respuesta del servidor');
