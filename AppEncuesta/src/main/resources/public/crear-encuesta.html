@@ -128,11 +128,32 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="form-foto">Foto (opcional)</label>
-                  <input type="file" id="form-foto" accept="image/*" class="form-control">
+                  <label>Foto (opcional)</label>
                   <input type="hidden" id="form-foto-base64">
-                  <div id="form-photo-msg" class="text-muted" style="margin-top:6px;"></div>
-                  <img id="form-foto-preview" class="mu-form-preview" src="" alt="preview" style="display:none">
+                  <div id="webcam-container">
+                    <video id="webcam" autoplay playsinline width="320" height="240"
+                           style="display:none; border-radius:4px; max-width:100%;"></video>
+                    <canvas id="webcam-canvas" style="display:none;"></canvas>
+                    <img id="form-foto-preview" class="mu-form-preview" src="" alt="preview" style="display:none;">
+                    <div style="margin-top:8px;">
+                      <button type="button" id="webcam-start-btn" class="btn btn-default btn-sm">
+                        <i class="fa fa-camera"></i> Abrir camara
+                      </button>
+                      <button type="button" id="webcam-capture-btn" class="btn btn-primary btn-sm" style="display:none;">
+                        <i class="fa fa-circle"></i> Capturar
+                      </button>
+                      <button type="button" id="webcam-switch-btn" class="btn btn-default btn-sm" style="display:none;">
+                        <i class="fa fa-refresh"></i> Cambiar camara
+                      </button>
+                      <button type="button" id="webcam-retake-btn" class="btn btn-default btn-sm" style="display:none;">
+                        <i class="fa fa-repeat"></i> Retomar
+                      </button>
+                      <button type="button" id="webcam-clear-btn" class="btn btn-default btn-sm" style="display:none;">
+                        <i class="fa fa-times"></i> Quitar foto
+                      </button>
+                    </div>
+                    <div id="form-photo-msg" class="text-muted" style="margin-top:6px;"></div>
+                  </div>
                 </div>
 
                 <button type="submit" class="mu-send-msg-btn btn btn-primary" style="width:auto;">
@@ -181,6 +202,7 @@
     <!-- Vendor (Bootstrap 3 requiere jQuery) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
 
     <!-- App -->
     <script src="js/models.js"></script>
@@ -207,7 +229,6 @@
       var gpsStatusEl = null; // Se crea dinámicamente
       var latitudInput = document.getElementById('form-latitud');
       var longitudInput = document.getElementById('form-longitud');
-      var fotoInput = document.getElementById('form-foto');
       var fotoBase64Input = document.getElementById('form-foto-base64');
       var fotoPreview = document.getElementById('form-foto-preview');
       var formGeoBtn = document.getElementById('form-geo-btn');
@@ -301,26 +322,7 @@
         });
       }
 
-      // Foto
-      if (fotoInput) {
-        fotoInput.addEventListener('change', function(e) {
-          var file = e.target.files[0];
-          if (!file) {
-            fotoBase64Input.value = '';
-            fotoPreview.style.display = 'none';
-            return;
-          }
-
-          var reader = new FileReader();
-          reader.onload = function(evt) {
-            fotoBase64Input.value = evt.target.result;
-            fotoPreview.src = evt.target.result;
-            fotoPreview.style.display = 'block';
-            setText(formGeoMsg, '✓ Foto cargada');
-          };
-          reader.readAsDataURL(file);
-        });
-      }
+      // La logica de camara se maneja en encuestas.js (wireWebcam)
 
       // Cargar plantilla default
       function loadPlantilla() {
@@ -494,7 +496,8 @@
                 show(formSuccess, true);
                 setText(formSuccess, '✓ Encuesta guardada exitosamente.');
                 formElement.reset();
-                fotoPreview.style.display = 'none';
+                if (fotoBase64Input) fotoBase64Input.value = '';
+                show(fotoPreview, false);
                 // Marcar como sincronizado
                 formularios = readFormulariosLocal();
                 for (var i = 0; i < formularios.length; i++) {
