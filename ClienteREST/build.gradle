@@ -4,7 +4,7 @@ plugins {
 }
 
 application {
-    mainClass = "org.CSTI5488.edu.Main"
+    mainClass = "org.CSTI5488.edu.cliente.ClienteRestApp"
 }
 
 group = 'org.CSTI5488.edu'
@@ -14,13 +14,45 @@ repositories {
     mavenCentral()
 }
 
+// Include the actual client source code from AppEncuesta/src
+sourceSets {
+    main {
+        java {
+            srcDirs = ['AppEncuesta/src/main/java']
+        }
+        resources {
+            srcDirs = ['AppEncuesta/src/main/resources']
+        }
+    }
+}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Servidor web (para servir el frontend del cliente)
     implementation 'io.javalin:javalin:7.1.0'
-    implementation("org.slf4j:slf4j-simple:2.0.17")
+    implementation 'org.slf4j:slf4j-simple:2.0.17'
+
+    // JSON (para comunicarse con la API REST del servidor principal)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+}
+
+run {
+    // Cargar variables de entorno si existe un archivo .env
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            def trimmed = line.trim()
+            if (trimmed && !trimmed.startsWith('#')) {
+                def idx = trimmed.indexOf('=')
+                if (idx > 0) {
+                    environment trimmed.substring(0, idx).trim(), trimmed.substring(idx + 1).trim()
+                }
+            }
+        }
+    }
 }
 
 test {
