@@ -22,6 +22,7 @@ public class FormularioController {
 
     public void registerRoutes(Javalin app) {
         app.unsafe.routes.post("/api/formularios", this::crear);
+        app.unsafe.routes.put("/api/formularios/{id}", this::actualizar);
         app.unsafe.routes.get("/api/formularios/usuario/{username}", this::listarPorUsuario);
         app.unsafe.routes.get("/api/formularios/mapa", this::listarMapa);
     }
@@ -50,6 +51,38 @@ public class FormularioController {
 
         formularioService.crear(formulario);
         ctx.status(201).json(Map.of("mensaje", "Formulario registrado exitosamente"));
+    }
+
+    private void actualizar(Context ctx) {
+        DecodedJWT jwt = validarToken(ctx);
+        if (jwt == null) return;
+
+        String id = ctx.pathParam("id");
+        Formulario body;
+        try {
+            body = ctx.bodyAsClass(Formulario.class);
+        } catch (Exception e) {
+            ctx.status(400).json(Map.of("error", "Cuerpo JSON invalido"));
+            return;
+        }
+
+        if (body.getNombre() == null || body.getSector() == null || body.getNivelEscolar() == null) {
+            ctx.status(400).json(Map.of("error", "nombre, sector y nivelEscolar son requeridos"));
+            return;
+        }
+
+        Formulario existente = formularioService.buscarPorId(id);
+        if (existente == null) {
+            ctx.status(404).json(Map.of("error", "Formulario no encontrado"));
+            return;
+        }
+        if (!jwt.getSubject().equals(existente.getUsuarioRegistro())) {
+            ctx.status(403).json(Map.of("error", "No autorizado para modificar este formulario"));
+            return;
+        }
+
+        formularioService.actualizar(id, body);
+        ctx.status(200).json(Map.of("mensaje", "Formulario actualizado"));
     }
 
     private void listarPorUsuario(Context ctx) {

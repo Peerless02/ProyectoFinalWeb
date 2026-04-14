@@ -213,12 +213,20 @@
           ? '<span class="label label-success">Sincronizado</span>'
           : '<span class="label label-warning">Pendiente</span>';
         
-        // Solo permitir eliminar si es local pendiente
+        var editBtn = '<button type="button" class="btn btn-xs btn-warning mu-form-edit">Editar</button>';
         var delBtn = !f.sincronizado
-          ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
-          : '<button type="button" class="btn btn-xs btn-default" disabled>No editar</button>';
+          ? ' <button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
+          : '';
 
-        out += '<tr data-id="' + String(f.id || '') + '" data-synced="' + (f.sincronizado ? 'true' : 'false') + '">'
+        out += '<tr'
+          + ' data-id="'     + escapeHtml(String(f.id || '')) + '"'
+          + ' data-synced="' + (f.sincronizado ? 'true' : 'false') + '"'
+          + ' data-nombre="' + escapeHtml(f.nombre || '') + '"'
+          + ' data-sector="' + escapeHtml(f.sector || '') + '"'
+          + ' data-nivel="'  + escapeHtml(f.nivelEscolar || '') + '"'
+          + ' data-lat="'    + (f.latitud  != null ? String(f.latitud)  : '') + '"'
+          + ' data-lng="'    + (f.longitud != null ? String(f.longitud) : '') + '"'
+          + '>'
           + '<td style="white-space:nowrap;">' + String(f.id || '').slice(0, 8) + '</td>'
           + '<td>' + (img ? (img + ' ') : '') + escapeHtml(f.nombre || '') + '</td>'
           + '<td>' + escapeHtml(f.sector || '') + '</td>'
@@ -226,7 +234,7 @@
           + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
           + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
           + '<td style="white-space:nowrap;">'
-          + delBtn
+          + editBtn + delBtn
           + '</td>'
           + '</tr>';
       }
@@ -884,6 +892,128 @@
     }, 15000);
   }
 
+  function wireEditModal() {
+    var tbody   = $('formularios-tbody');
+    var form    = $('edit-form');
+    if (!tbody || !form) return;
+
+    // Abrir modal al hacer click en Editar
+    tbody.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.classList || !t.classList.contains('mu-form-edit')) return;
+
+      var tr = t.closest('tr');
+      if (!tr) return;
+
+      $('edit-id').value     = tr.getAttribute('data-id')     || '';
+      $('edit-synced').value = tr.getAttribute('data-synced') || 'false';
+      $('edit-nombre').value = tr.getAttribute('data-nombre') || '';
+      $('edit-sector').value = tr.getAttribute('data-sector') || '';
+      $('edit-nivel').value  = tr.getAttribute('data-nivel')  || '';
+      $('edit-latitud').value  = tr.getAttribute('data-lat')  || '';
+      $('edit-longitud').value = tr.getAttribute('data-lng')  || '';
+
+      setText($('edit-error'), '');
+      show($('edit-error'), false);
+
+      if (window.jQuery && window.jQuery.fn.modal) {
+        window.jQuery('#editModal').modal('show');
+      }
+    });
+
+    // Submit modal
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var id     = $('edit-id').value;
+      var synced = $('edit-synced').value === 'true';
+      var nombre = $('edit-nombre').value.trim();
+      var sector = $('edit-sector').value.trim();
+      var nivel  = $('edit-nivel').value;
+      var lat    = $('edit-latitud').value.trim();
+      var lng    = $('edit-longitud').value.trim();
+
+      if (!nombre || !sector || !nivel) {
+        setText($('edit-error'), 'Nombre, sector y nivel son requeridos.');
+        show($('edit-error'), true);
+        return;
+      }
+
+      var latNum = lat !== '' ? Number(lat) : null;
+      var lngNum = lng !== '' ? Number(lng) : null;
+      if (lat !== '' && !isFinite(latNum)) {
+        setText($('edit-error'), 'Latitud invalida.');
+        show($('edit-error'), true);
+        return;
+      }
+      if (lng !== '' && !isFinite(lngNum)) {
+        setText($('edit-error'), 'Longitud invalida.');
+        show($('edit-error'), true);
+        return;
+      }
+
+      var submitBtn = $('edit-submit');
+      if (submitBtn) submitBtn.disabled = true;
+
+      if (synced) {
+        // Registro del servidor: llamar PUT
+        var auth = getAuth();
+        if (!auth) {
+          setText($('edit-error'), 'Sesion expirada. Inicia sesion nuevamente.');
+          show($('edit-error'), true);
+          if (submitBtn) submitBtn.disabled = false;
+          return;
+        }
+        fetch('/api/formularios/' + encodeURIComponent(id), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + auth.token
+          },
+          body: JSON.stringify({
+            nombre: nombre,
+            sector: sector,
+            nivelEscolar: nivel,
+            latitud: latNum,
+            longitud: lngNum
+          })
+        }).then(function (r) {
+          if (r.ok) {
+            if (window.jQuery && window.jQuery.fn.modal) window.jQuery('#editModal').modal('hide');
+            renderList();
+          } else {
+            return r.json().then(function (d) {
+              setText($('edit-error'), (d && d.error) ? d.error : 'Error al actualizar (' + r.status + ').');
+              show($('edit-error'), true);
+            });
+          }
+        }).catch(function () {
+          setText($('edit-error'), 'No se pudo conectar al servidor.');
+          show($('edit-error'), true);
+        }).finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+      } else {
+        // Registro local pendiente: actualizar localStorage
+        var all = readFormularios();
+        for (var i = 0; i < all.length; i++) {
+          if (String(all[i].id) === String(id)) {
+            all[i].nombre      = nombre;
+            all[i].sector      = sector;
+            all[i].nivelEscolar = nivel;
+            all[i].latitud     = latNum;
+            all[i].longitud    = lngNum;
+            break;
+          }
+        }
+        writeFormularios(all);
+        if (window.jQuery && window.jQuery.fn.modal) window.jQuery('#editModal').modal('hide');
+        if (submitBtn) submitBtn.disabled = false;
+        renderList();
+      }
+    });
+  }
+
   function wireWebcam() {
     var video      = $('webcam');
     var canvas     = $('webcam-canvas');
@@ -991,6 +1121,7 @@
 
     wireAuth();
     wireCreate();
+    wireEditModal();
     wireWebcam();
     wireListActions();
     renderAuth();

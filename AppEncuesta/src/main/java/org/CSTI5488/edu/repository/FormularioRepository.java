@@ -50,6 +50,38 @@ public class FormularioRepository {
         return resultado;
     }
 
+    public Formulario findById(String id) {
+        try {
+            ObjectId oid = new ObjectId(id);
+            Document doc = collection.find(Filters.eq("_id", oid)).first();
+            return doc != null ? docToFormulario(doc) : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    public boolean update(String id, Formulario formulario) {
+        try {
+            ObjectId oid = new ObjectId(id);
+            Document setDoc = new Document()
+                .append("nombre",      formulario.getNombre())
+                .append("sector",      formulario.getSector())
+                .append("nivelEscolar", formulario.getNivelEscolar().name())
+                .append("latitud",     formulario.getLatitud())
+                .append("longitud",    formulario.getLongitud());
+            if (formulario.getFotoBase64() != null) {
+                setDoc.append("fotoBase64", formulario.getFotoBase64());
+            }
+            var result = collection.updateOne(
+                Filters.eq("_id", oid),
+                new Document("$set", setDoc)
+            );
+            return result.getMatchedCount() > 0;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     public List<Formulario> findWithCoords() {
         List<Formulario> resultado = new ArrayList<>();
         var filter = Filters.and(

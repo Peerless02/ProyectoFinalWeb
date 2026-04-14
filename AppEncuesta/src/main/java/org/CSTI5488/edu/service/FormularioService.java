@@ -25,6 +25,14 @@ public class FormularioService {
         return formularioRepository.findByUsuario(username);
     }
 
+    public Formulario buscarPorId(String id) {
+        return formularioRepository.findById(id);
+    }
+
+    public boolean actualizar(String id, Formulario formulario) {
+        return formularioRepository.update(id, formulario);
+    }
+
     public List<Formulario> listarConCoordenadas() {
         return formularioRepository.findWithCoords();
     }
