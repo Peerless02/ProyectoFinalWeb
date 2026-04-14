@@ -213,9 +213,17 @@
           ? '<span class="label label-success">Sincronizado</span>'
           : '<span class="label label-warning">Pendiente</span>';
         
+        var latNum = (f.latitud != null && f.latitud !== '') ? Number(f.latitud) : NaN;
+        var lngNum = (f.longitud != null && f.longitud !== '') ? Number(f.longitud) : NaN;
+        var hasCoords = isFinite(latNum) && isFinite(lngNum);
+
+        var mapBtn = hasCoords
+          ? '<button type="button" class="btn btn-xs btn-info mu-form-map"><i class="fa fa-map-marker"></i> Visualizar en el mapa</button>'
+          : '<button type="button" class="btn btn-xs btn-info mu-form-map" disabled title="Sin coordenadas GPS"><i class="fa fa-map-marker"></i> Visualizar en el mapa</button>';
+
         var editBtn = '<button type="button" class="btn btn-xs btn-warning mu-form-edit">Editar</button>';
         var delBtn = !f.sincronizado
-          ? ' <button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
+          ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
           : '';
 
         out += '<tr'
@@ -234,7 +242,7 @@
           + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
           + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
           + '<td style="white-space:nowrap;">'
-          + editBtn + delBtn
+          + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '')
           + '</td>'
           + '</tr>';
       }
@@ -1049,6 +1057,63 @@
     });
   }
 
+  function wireMapModal() {
+    var tbody = $('formularios-tbody');
+    if (!tbody) return;
+
+    function isValidLatLng(lat, lng) {
+      return isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+    }
+
+    tbody.addEventListener('click', function (e) {
+      var t = e.target;
+      var btn = (t && t.closest) ? t.closest('button') : t;
+      if (!btn || !btn.classList || !btn.classList.contains('mu-form-map')) return;
+
+      var tr = btn.closest ? btn.closest('tr') : null;
+      if (!tr) return;
+
+      var latS = tr.getAttribute('data-lat') || '';
+      var lngS = tr.getAttribute('data-lng') || '';
+      var lat = latS !== '' ? Number(latS) : NaN;
+      var lng = lngS !== '' ? Number(lngS) : NaN;
+      if (!isValidLatLng(lat, lng)) {
+        alert('Esta encuesta no tiene coordenadas validas (lat/lng).');
+        return;
+      }
+
+      var nombre = tr.getAttribute('data-nombre') || 'Encuesta';
+      var label = $('mapModalLabel');
+      if (label) setText(label, 'Ubicacion: ' + nombre);
+
+      var coordsEl = $('map-coords');
+      if (coordsEl) setText(coordsEl, lat.toFixed(6) + ', ' + lng.toFixed(6));
+
+      // Mantener la coma sin encodear mejora compatibilidad con el parsing de Google Maps.
+      var q = encodeURIComponent(String(lat)) + ',' + encodeURIComponent(String(lng));
+      var embedUrl = 'https://www.google.com/maps?q=' + q + '&z=16&output=embed';
+      var openUrl = 'https://www.google.com/maps?q=' + q + '&z=16';
+
+      var openLink = $('map-open-link');
+      if (openLink) openLink.href = openUrl;
+
+      var iframe = $('map-iframe');
+      if (iframe) iframe.src = embedUrl;
+
+      if (window.jQuery && window.jQuery.fn.modal) {
+        window.jQuery('#mapModal').modal('show');
+      }
+    });
+
+    // Detener carga del iframe al cerrar el modal (y liberar recursos)
+    if (window.jQuery) {
+      window.jQuery('#mapModal').on('hidden.bs.modal', function () {
+        var iframe = $('map-iframe');
+        if (iframe) iframe.src = 'about:blank';
+      });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     // If auth is invalid/expired, drop it.
     if (!getAuth()) clearAuth();
@@ -1069,6 +1134,7 @@
     wireCreate();
     wireEditModal();
     wireListActions();
+    wireMapModal();
     renderAuth();
     renderList();
     renderSyncBadge();
