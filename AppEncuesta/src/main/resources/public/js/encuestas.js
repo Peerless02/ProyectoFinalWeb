@@ -149,6 +149,7 @@
     var listWrap = $('mu-formulario-list');
     if (listWrap) show(listWrap, !!auth);
     renderSyncBadge();
+    loadDashboard();
   }
 
   function renderList() {
@@ -1430,6 +1431,86 @@
         if (iframe) iframe.src = 'about:blank';
       });
     }
+  }
+
+  // --- Dashboard / Stats ---
+  var _charts = {};
+
+  function renderChart(id, type, labels, values, label) {
+    var canvas = document.getElementById(id);
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (_charts[id]) { _charts[id].destroy(); }
+
+    var palette = ['#337ab7','#5cb85c','#f0ad4e','#d9534f','#9b59b6','#1abc9c','#e67e22','#2980b9','#27ae60'];
+    var bgColors = type === 'line'
+      ? 'rgba(51,122,183,0.15)'
+      : labels.map(function (_, i) { return palette[i % palette.length]; });
+    var borderColors = type === 'line'
+      ? '#337ab7'
+      : labels.map(function (_, i) { return palette[i % palette.length]; });
+
+    _charts[id] = new Chart(canvas, {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: values,
+          backgroundColor: bgColors,
+          borderColor: borderColors,
+          borderWidth: type === 'line' ? 2 : 1,
+          fill: type === 'line',
+          tension: 0.3,
+          pointRadius: type === 'line' ? 3 : undefined
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: type !== 'bar' } },
+        scales: type !== 'doughnut'
+          ? { y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } } }
+          : {}
+      }
+    });
+  }
+
+  function loadDashboard() {
+    var auth = getAuth();
+    var section = document.getElementById('mu-dashboard');
+    if (!section) return;
+    if (!auth) { section.style.display = 'none'; return; }
+
+    section.style.display = '';
+
+    fetch('/api/stats', { headers: { 'Authorization': 'Bearer ' + auth.token } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (data) {
+        var totalEl    = document.getElementById('stats-total');
+        var sectoresEl = document.getElementById('stats-sectores');
+        var ult30El    = document.getElementById('stats-ultimos30');
+
+        if (totalEl)    totalEl.textContent    = data.total != null ? data.total : 0;
+        if (sectoresEl) sectoresEl.textContent = (data.porSector || []).length;
+        var ult30 = (data.porDia || []).reduce(function (s, d) { return s + (d.count || 0); }, 0);
+        if (ult30El)    ult30El.textContent    = ult30;
+
+        renderChart('chart-sector', 'bar',
+          (data.porSector || []).map(function (d) { return d.sector || '(sin sector)'; }),
+          (data.porSector || []).map(function (d) { return d.count || 0; }),
+          'Encuestas'
+        );
+        renderChart('chart-nivel', 'doughnut',
+          (data.porNivel || []).map(function (d) { return d.nivel || '(sin nivel)'; }),
+          (data.porNivel || []).map(function (d) { return d.count || 0; }),
+          'Nivel escolar'
+        );
+        renderChart('chart-timeline', 'line',
+          (data.porDia || []).map(function (d) { return d.fecha || ''; }),
+          (data.porDia || []).map(function (d) { return d.count || 0; }),
+          'Registros diarios'
+        );
+      })
+      .catch(function () { /* stats no críticos */ });
   }
 
   // --- QR Code ---

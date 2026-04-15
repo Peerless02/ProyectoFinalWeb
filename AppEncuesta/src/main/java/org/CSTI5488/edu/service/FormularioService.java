@@ -5,6 +5,7 @@ import org.CSTI5488.edu.repository.FormularioRepository;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class FormularioService {
 
@@ -50,5 +51,10 @@ public class FormularioService {
     /** Verifica si un formulario con este ID local ya fue sincronizado por el usuario. */
     public boolean existePorLocalId(String localId, String username) {
         return formularioRepository.existsByLocalId(localId, username);
+    }
+
+    /** Retorna estadísticas agregadas: total, porSector, porNivel, porDia (últimos 30 días). */
+    public Map<String, Object> getStats() {
+        return formularioRepository.getStats();
     }
 }

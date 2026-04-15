@@ -223,6 +223,72 @@
           </div>
         </div>
       </section>
+
+      <!-- Sección Dashboard / Estadísticas -->
+      <section id="mu-dashboard" class="mu-section-pad" style="display:none;">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-title-area">
+                <h2 class="mu-title">Estadísticas</h2>
+                <p>Distribución de encuestas registradas en el sistema.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjetas de totales -->
+          <div class="row" style="margin-bottom:30px;">
+            <div class="col-sm-4">
+              <div class="panel panel-default" style="text-align:center; padding:20px 10px;">
+                <h1 id="stats-total" style="margin:0 0 6px; color:#337ab7; font-size:48px;">-</h1>
+                <p class="text-muted" style="margin:0;">Total encuestas</p>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="panel panel-default" style="text-align:center; padding:20px 10px;">
+                <h1 id="stats-sectores" style="margin:0 0 6px; color:#5cb85c; font-size:48px;">-</h1>
+                <p class="text-muted" style="margin:0;">Sectores distintos</p>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="panel panel-default" style="text-align:center; padding:20px 10px;">
+                <h1 id="stats-ultimos30" style="margin:0 0 6px; color:#f0ad4e; font-size:48px;">-</h1>
+                <p class="text-muted" style="margin:0;">Últimos 30 días</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráficos -->
+          <div class="row">
+            <div class="col-md-6" style="margin-bottom:30px;">
+              <div class="panel panel-default">
+                <div class="panel-heading"><strong><i class="fa fa-bar-chart"></i> Por sector</strong></div>
+                <div class="panel-body">
+                  <canvas id="chart-sector" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6" style="margin-bottom:30px;">
+              <div class="panel panel-default">
+                <div class="panel-heading"><strong><i class="fa fa-pie-chart"></i> Por nivel escolar</strong></div>
+                <div class="panel-body">
+                  <canvas id="chart-nivel" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12" style="margin-bottom:30px;">
+              <div class="panel panel-default">
+                <div class="panel-heading"><strong><i class="fa fa-line-chart"></i> Registros — últimos 30 días</strong></div>
+                <div class="panel-body">
+                  <canvas id="chart-timeline" height="100"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Auth modal -->
@@ -432,6 +498,7 @@
     <script src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- App -->
     <script src="js/models.js"></script>

@@ -1,7 +1,10 @@
 package org.CSTI5488.edu.repository;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Sorts;
 import org.CSTI5488.edu.db.MongoConfig;
 import org.CSTI5488.edu.model.Formulario;
 import org.CSTI5488.edu.model.NivelEscolar;
@@ -10,6 +13,7 @@ import org.bson.types.ObjectId;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -122,6 +126,61 @@ public class FormularioRepository {
             resultado.add(docToFormulario(doc));
         }
         return resultado;
+    }
+
+    public Map<String, Object> getStats() {
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        // Total de formularios
+        result.put("total", collection.countDocuments());
+
+        // Por sector (top 10)
+        List<Map<String, Object>> porSector = new ArrayList<>();
+        collection.aggregate(List.of(
+            Aggregates.group("$sector", Accumulators.sum("count", 1)),
+            Aggregates.sort(Sorts.descending("count")),
+            Aggregates.limit(10)
+        )).forEach(doc -> {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("sector", doc.getString("_id") != null ? doc.getString("_id") : "(sin sector)");
+            entry.put("count", doc.getInteger("count", 0));
+            porSector.add(entry);
+        });
+        result.put("porSector", porSector);
+
+        // Por nivel escolar
+        List<Map<String, Object>> porNivel = new ArrayList<>();
+        collection.aggregate(List.of(
+            Aggregates.group("$nivelEscolar", Accumulators.sum("count", 1)),
+            Aggregates.sort(Sorts.descending("count"))
+        )).forEach(doc -> {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("nivel", doc.getString("_id") != null ? doc.getString("_id") : "(sin nivel)");
+            entry.put("count", doc.getInteger("count", 0));
+            porNivel.add(entry);
+        });
+        result.put("porNivel", porNivel);
+
+        // Por día (últimos 30 días)
+        Date thirtyDaysAgo = new Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000);
+        List<Map<String, Object>> porDia = new ArrayList<>();
+        collection.aggregate(List.of(
+            Aggregates.match(Filters.gte("fechaRegistro", thirtyDaysAgo)),
+            Aggregates.group(
+                new Document("$dateToString",
+                    new Document("format", "%Y-%m-%d").append("date", "$fechaRegistro")),
+                Accumulators.sum("count", 1)
+            ),
+            Aggregates.sort(Sorts.ascending("_id"))
+        )).forEach(doc -> {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("fecha", doc.getString("_id"));
+            entry.put("count", doc.getInteger("count", 0));
+            porDia.add(entry);
+        });
+        result.put("porDia", porDia);
+
+        return result;
     }
 
     private Formulario docToFormulario(Document doc) {
