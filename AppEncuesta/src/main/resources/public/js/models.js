@@ -29,6 +29,7 @@ class Formulario {
     this.longitud = longitud;
     this.fotoBase64 = fotoBase64;
     this.fechaRegistro = new Date().toISOString();
+    this.camposExtra = null;
 
     // Atributo interno del frontend para saber si ya se sincronizo
     this.sincronizado = false;

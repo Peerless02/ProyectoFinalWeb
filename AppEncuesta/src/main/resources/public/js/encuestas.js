@@ -103,7 +103,7 @@
   function makeFormulario(data) {
     // Prefer usar la clase Formulario si existe (models.js), para reflejar el backend.
     if (typeof Formulario === 'function') {
-      return new Formulario(
+      var f = new Formulario(
         data.id || null,
         data.nombre,
         data.sector,
@@ -113,6 +113,8 @@
         data.longitud,
         data.fotoBase64 || ''
       );
+      if (data.camposExtra) f.camposExtra = data.camposExtra;
+      return f;
     }
     return {
       id: data.id || uuidFallback(),
@@ -123,9 +125,32 @@
       latitud: data.latitud,
       longitud: data.longitud,
       fotoBase64: data.fotoBase64 || '',
+      camposExtra: data.camposExtra || null,
       fechaRegistro: new Date().toISOString(),
       sincronizado: false
     };
+  }
+
+  function readCamposExtraValues() {
+    var container = document.getElementById('campos-extra');
+    if (!container) return null;
+    var inputs = container.querySelectorAll('[data-campo-id]');
+    if (!inputs.length) return null;
+    var result = {};
+    inputs.forEach(function (el) {
+      var id   = el.getAttribute('data-campo-id');
+      var tipo = el.getAttribute('data-campo-tipo') || 'text';
+      var val;
+      if (tipo === 'checkbox') {
+        val = el.checked;
+      } else if (tipo === 'number') {
+        val = el.value !== '' ? Number(el.value) : null;
+      } else {
+        val = el.value !== '' ? el.value : null;
+      }
+      if (id) result[id] = val;
+    });
+    return Object.keys(result).length > 0 ? result : null;
   }
 
   function renderAuth() {
@@ -149,6 +174,7 @@
     var listWrap = $('mu-formulario-list');
     if (listWrap) show(listWrap, !!auth);
     renderSyncBadge();
+    loadDashboard();
   }
 
   function renderList() {
@@ -229,6 +255,7 @@
         var delBtn = !f.sincronizado
           ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
           : '';
+        var qrBtn = '<button type="button" class="btn btn-xs btn-default mu-form-qr" title="Compartir QR"><i class="fa fa-qrcode"></i></button>';
 
         out += '<tr'
           + ' data-id="'     + escapeHtml(String(f.id || '')) + '"'
@@ -246,7 +273,7 @@
           + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
           + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
           + '<td style="white-space:nowrap;">'
-          + (syncOneBtn ? (syncOneBtn + ' ') : '') + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '')
+          + (syncOneBtn ? (syncOneBtn + ' ') : '') + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '') + ' ' + qrBtn
           + '</td>'
           + '</tr>';
       }
@@ -673,7 +700,8 @@
         usuarioRegistro: auth.username,
         latitud: latNum,
         longitud: lngNum,
-        fotoBase64: foto
+        fotoBase64: foto,
+        camposExtra: readCamposExtraValues()
       });
 
       var list = readFormularios();
@@ -684,6 +712,9 @@
       setText(ok, 'Encuesta registrada localmente.');
       show(ok, true);
       setTimeout(function () { show(ok, false); }, 2500);
+
+      // Mostrar QR para compartir el formulario
+      showQR(window.location.origin + '/crear-encuesta.html');
 
       form.reset();
       if (photoPreview) show(photoPreview, false);
@@ -760,6 +791,12 @@
               alert('Error en la sincronizacion: ' + msg);
             }
           });
+          return;
+        }
+
+        // QR para compartir formulario
+        if (t.classList.contains('mu-form-qr') || (t.closest && t.closest('.mu-form-qr'))) {
+          showQR(window.location.origin + '/crear-encuesta.html');
           return;
         }
 
@@ -1419,6 +1456,134 @@
         var iframe = $('map-iframe');
         if (iframe) iframe.src = 'about:blank';
       });
+    }
+  }
+
+  // --- Dashboard / Stats ---
+  var _charts = {};
+
+  function renderChart(id, type, labels, values, label) {
+    var canvas = document.getElementById(id);
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (_charts[id]) { _charts[id].destroy(); }
+
+    var palette = ['#337ab7','#5cb85c','#f0ad4e','#d9534f','#9b59b6','#1abc9c','#e67e22','#2980b9','#27ae60'];
+    var bgColors = type === 'line'
+      ? 'rgba(51,122,183,0.15)'
+      : labels.map(function (_, i) { return palette[i % palette.length]; });
+    var borderColors = type === 'line'
+      ? '#337ab7'
+      : labels.map(function (_, i) { return palette[i % palette.length]; });
+
+    _charts[id] = new Chart(canvas, {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: values,
+          backgroundColor: bgColors,
+          borderColor: borderColors,
+          borderWidth: type === 'line' ? 2 : 1,
+          fill: type === 'line',
+          tension: 0.3,
+          pointRadius: type === 'line' ? 3 : undefined
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: type !== 'bar' } },
+        scales: type !== 'doughnut'
+          ? { y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } } }
+          : {}
+      }
+    });
+  }
+
+  function loadDashboard() {
+    var auth = getAuth();
+    var section = document.getElementById('mu-dashboard');
+    if (!section) return;
+    if (!auth) { section.style.display = 'none'; return; }
+
+    section.style.display = '';
+
+    fetch('/api/stats', { headers: { 'Authorization': 'Bearer ' + auth.token } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (data) {
+        var totalEl    = document.getElementById('stats-total');
+        var sectoresEl = document.getElementById('stats-sectores');
+        var ult30El    = document.getElementById('stats-ultimos30');
+
+        if (totalEl)    totalEl.textContent    = data.total != null ? data.total : 0;
+        if (sectoresEl) sectoresEl.textContent = (data.porSector || []).length;
+        var ult30 = (data.porDia || []).reduce(function (s, d) { return s + (d.count || 0); }, 0);
+        if (ult30El)    ult30El.textContent    = ult30;
+
+        renderChart('chart-sector', 'bar',
+          (data.porSector || []).map(function (d) { return d.sector || '(sin sector)'; }),
+          (data.porSector || []).map(function (d) { return d.count || 0; }),
+          'Encuestas'
+        );
+        renderChart('chart-nivel', 'doughnut',
+          (data.porNivel || []).map(function (d) { return d.nivel || '(sin nivel)'; }),
+          (data.porNivel || []).map(function (d) { return d.count || 0; }),
+          'Nivel escolar'
+        );
+        renderChart('chart-timeline', 'line',
+          (data.porDia || []).map(function (d) { return d.fecha || ''; }),
+          (data.porDia || []).map(function (d) { return d.count || 0; }),
+          'Registros diarios'
+        );
+      })
+      .catch(function () { /* stats no críticos */ });
+  }
+
+  // --- QR Code ---
+  function showQR(url) {
+    var container = document.getElementById('qr-container');
+    var urlInput  = document.getElementById('qr-url-text');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(container, { text: url, width: 180, height: 180 });
+    } else {
+      container.innerHTML = '<p class="text-muted">Libreria QR no cargada.</p>';
+    }
+    if (urlInput) urlInput.value = url;
+
+    var copyBtn = document.getElementById('qr-copy-btn');
+    if (copyBtn) {
+      copyBtn.onclick = function () {
+        var self = this;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).catch(function () {
+            if (urlInput) { urlInput.select(); document.execCommand('copy'); }
+          });
+        } else if (urlInput) {
+          urlInput.select();
+          document.execCommand('copy');
+        }
+        self.innerHTML = '<i class="fa fa-check"></i>';
+        setTimeout(function () { self.innerHTML = '<i class="fa fa-copy"></i>'; }, 1500);
+      };
+    }
+
+    var dlBtn = document.getElementById('qr-download-btn');
+    if (dlBtn) {
+      dlBtn.onclick = function () {
+        var canvas = container.querySelector('canvas');
+        if (!canvas) return;
+        var a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = 'encuesta-qr.png';
+        a.click();
+      };
+    }
+
+    if (window.jQuery && window.jQuery.fn.modal) {
+      window.jQuery('#qrModal').modal('show');
     }
   }
 

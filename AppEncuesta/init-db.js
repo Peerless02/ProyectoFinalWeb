@@ -166,11 +166,191 @@ usuariosSeed.forEach(u => {
 });
 
 // -----------------------------------------------------------------------------
+// COLECCION: plantillas
+// Campos: nombre, descripcion, esDefault, creadoPor, fechaCreacion, camposExtra[]
+// -----------------------------------------------------------------------------
+if (!existingCollections.includes("plantillas")) {
+db.createCollection("plantillas", {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["nombre", "creadoPor", "fechaCreacion"],
+            properties: {
+                nombre: {
+                    bsonType: "string",
+                    description: "Nombre de la plantilla — requerido"
+                },
+                descripcion: {
+                    bsonType: ["string", "null"],
+                    description: "Descripcion opcional"
+                },
+                esDefault: {
+                    bsonType: "bool",
+                    description: "Si es la plantilla por defecto"
+                },
+                creadoPor: {
+                    bsonType: "string",
+                    description: "Username del creador — requerido"
+                },
+                fechaCreacion: {
+                    bsonType: "date",
+                    description: "Fecha de creacion — requerido"
+                },
+                camposExtra: {
+                    bsonType: "array",
+                    description: "Campos adicionales definidos por el admin"
+                }
+            }
+        }
+    }
+});
+print("Coleccion 'plantillas' creada.");
+} else {
+print("Coleccion 'plantillas' ya existe, omitida.");
+}
+
+// --- Plantillas pre-hechas ---
+const plantillasSeed = [
+    {
+        nombre: "Encuesta Basica",
+        descripcion: "Plantilla por defecto con campos de ocupacion e ingresos.",
+        esDefault: true,
+        creadoPor: "admin",
+        fechaCreacion: new Date(),
+        camposExtra: [
+            {
+                id: "campo-ocupacion",
+                label: "Ocupacion",
+                tipo: "text",
+                opciones: [],
+                requerido: true,
+                orden: 1
+            },
+            {
+                id: "campo-ingresos",
+                label: "Rango de ingresos mensuales",
+                tipo: "select",
+                opciones: [
+                    "Menos de RD$15,000",
+                    "RD$15,000 - RD$30,000",
+                    "RD$30,000 - RD$60,000",
+                    "RD$60,000 - RD$100,000",
+                    "Mas de RD$100,000"
+                ],
+                requerido: true,
+                orden: 2
+            },
+            {
+                id: "campo-observaciones",
+                label: "Observaciones",
+                tipo: "textarea",
+                opciones: [],
+                requerido: false,
+                orden: 3
+            }
+        ]
+    },
+    {
+        nombre: "Encuesta Salud",
+        descripcion: "Plantilla para levantamientos de salud comunitaria.",
+        esDefault: false,
+        creadoPor: "admin",
+        fechaCreacion: new Date(),
+        camposExtra: [
+            {
+                id: "campo-seguro-medico",
+                label: "Tiene seguro medico",
+                tipo: "select",
+                opciones: ["Si - ARS publica", "Si - ARS privada", "No"],
+                requerido: true,
+                orden: 1
+            },
+            {
+                id: "campo-condicion-cronica",
+                label: "Condicion cronica diagnosticada",
+                tipo: "checkbox",
+                opciones: [],
+                requerido: false,
+                orden: 2
+            },
+            {
+                id: "campo-ultima-visita",
+                label: "Fecha de ultima visita medica",
+                tipo: "date",
+                opciones: [],
+                requerido: false,
+                orden: 3
+            },
+            {
+                id: "campo-num-dependientes",
+                label: "Numero de dependientes en el hogar",
+                tipo: "number",
+                opciones: [],
+                requerido: true,
+                orden: 4
+            }
+        ]
+    },
+    {
+        nombre: "Encuesta Educacion",
+        descripcion: "Plantilla para evaluacion del acceso educativo en la zona norte.",
+        esDefault: false,
+        creadoPor: "admin",
+        fechaCreacion: new Date(),
+        camposExtra: [
+            {
+                id: "campo-institucion",
+                label: "Institucion educativa",
+                tipo: "text",
+                opciones: [],
+                requerido: true,
+                orden: 1
+            },
+            {
+                id: "campo-modalidad",
+                label: "Modalidad de estudio",
+                tipo: "select",
+                opciones: ["Presencial", "Virtual", "Semipresencial", "No estudia actualmente"],
+                requerido: true,
+                orden: 2
+            },
+            {
+                id: "campo-acceso-internet",
+                label: "Tiene acceso a internet en el hogar",
+                tipo: "select",
+                opciones: ["Si - fibra optica", "Si - datos moviles", "Si - satelital", "No"],
+                requerido: true,
+                orden: 3
+            },
+            {
+                id: "campo-comentario-educacion",
+                label: "Comentarios adicionales sobre educacion",
+                tipo: "textarea",
+                opciones: [],
+                requerido: false,
+                orden: 4
+            }
+        ]
+    }
+];
+
+// Insertar plantillas solo si la coleccion esta vacia
+const plantillasCount = db.plantillas.countDocuments();
+if (plantillasCount === 0) {
+    db.plantillas.insertMany(plantillasSeed);
+    print("3 plantillas seed insertadas (Encuesta Basica [DEFAULT], Salud, Educacion).");
+} else {
+    print("Plantillas ya existen (" + plantillasCount + "), omitidas.");
+}
+
+// -----------------------------------------------------------------------------
 // RESUMEN
 // -----------------------------------------------------------------------------
 print("\n=== Inicializacion completada ===");
 print("Base de datos : encuestadb");
-print("Colecciones   : usuarios, formularios");
+print("Colecciones   : usuarios, formularios, plantillas");
 print("Usuarios seed : admin / Admin123!   |   encuestador1 / Admin123!");
+print("Plantillas    : Encuesta Basica (DEFAULT), Encuesta Salud, Encuesta Educacion");
 print("IMPORTANTE    : Cambia el hash de passwords antes de produccion.");
 print("                Genera un nuevo hash en: https://bcrypt-generator.com (rounds=10)");
+

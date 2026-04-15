@@ -350,8 +350,8 @@
         function setAuth(token) { localStorage.setItem(LS_AUTH, JSON.stringify({ token: token })); }
         function clearAuth() { localStorage.removeItem(LS_AUTH); }
 
-        function showLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('show'); return; } }
-        function hideLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('hide'); return; } }
+        function showLoginModal() { if (window.jQuery) { window.jQuery('#authModal').modal('show'); } }
+        function hideLoginModal() { if (window.jQuery) { window.jQuery('#authModal').modal('hide'); } }
 
         function setLoginError(msg) {
           setText($('auth-error'), msg || '');
@@ -587,7 +587,7 @@
           show($('plantilla-modal-error'), false);
           $('plantilla-nombre-input').value = '';
           $('plantilla-desc-input').value = '';
-          if (window.$) $('#plantillaModal').modal('show');
+          if (window.jQuery) window.jQuery('#plantillaModal').modal('show');
         }
 
         function toggleOpciones() {
@@ -620,7 +620,7 @@
           $('campo-opciones').value = (campo && campo.opciones && Array.isArray(campo.opciones)) ? campo.opciones.join('\n') : '';
           toggleOpciones();
 
-          if (window.$) $('#campoModal').modal('show');
+          if (window.jQuery) window.jQuery('#campoModal').modal('show');
         }
 
         function wireAuth() {
@@ -696,7 +696,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ nombre: nombre, descripcion: descripcion || null })
             }).then(function (p) {
-              if (window.$) $('#plantillaModal').modal('hide');
+              if (window.jQuery) window.jQuery('#plantillaModal').modal('hide');
               selectedPlantillaId = p && p.id ? p.id : null;
               setPageSuccess('Plantilla creada exitosamente.');
               return loadPlantillas();
@@ -800,7 +800,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: cid || null, label: label, tipo: tipo, opciones: opciones, requerido: requerido, orden: orden })
             }).then(function () {
-              if (window.$) $('#campoModal').modal('hide');
+              if (window.jQuery) window.jQuery('#campoModal').modal('hide');
               setPageSuccess('Campo ' + (isEdit ? 'actualizado' : 'agregado') + ' exitosamente.');
               return loadPlantilla(selectedPlantillaId);
             }).catch(function (err) {

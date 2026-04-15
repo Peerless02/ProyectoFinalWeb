@@ -223,6 +223,72 @@
           </div>
         </div>
       </section>
+
+      <!-- Sección Dashboard / Estadísticas -->
+      <section id="mu-dashboard" class="mu-section-pad" style="display:none;">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="mu-title-area">
+                <h2 class="mu-title">Estadísticas</h2>
+                <p>Distribución de encuestas registradas en el sistema.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjetas de totales -->
+          <div class="row" style="margin-bottom:30px;">
+            <div class="col-sm-4">
+              <div class="panel panel-default" style="text-align:center; padding:20px 10px;">
+                <h1 id="stats-total" style="margin:0 0 6px; color:#337ab7; font-size:48px;">-</h1>
+                <p class="text-muted" style="margin:0;">Total encuestas</p>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="panel panel-default" style="text-align:center; padding:20px 10px;">
+                <h1 id="stats-sectores" style="margin:0 0 6px; color:#5cb85c; font-size:48px;">-</h1>
+                <p class="text-muted" style="margin:0;">Sectores distintos</p>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="panel panel-default" style="text-align:center; padding:20px 10px;">
+                <h1 id="stats-ultimos30" style="margin:0 0 6px; color:#f0ad4e; font-size:48px;">-</h1>
+                <p class="text-muted" style="margin:0;">Últimos 30 días</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráficos -->
+          <div class="row">
+            <div class="col-md-6" style="margin-bottom:30px;">
+              <div class="panel panel-default">
+                <div class="panel-heading"><strong><i class="fa fa-bar-chart"></i> Por sector</strong></div>
+                <div class="panel-body">
+                  <canvas id="chart-sector" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6" style="margin-bottom:30px;">
+              <div class="panel panel-default">
+                <div class="panel-heading"><strong><i class="fa fa-pie-chart"></i> Por nivel escolar</strong></div>
+                <div class="panel-body">
+                  <canvas id="chart-nivel" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12" style="margin-bottom:30px;">
+              <div class="panel panel-default">
+                <div class="panel-heading"><strong><i class="fa fa-line-chart"></i> Registros — últimos 30 días</strong></div>
+                <div class="panel-body">
+                  <canvas id="chart-timeline" height="100"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Auth modal -->
@@ -400,10 +466,39 @@
       </div>
     </div>
 
+    <!-- Modal QR compartir encuesta -->
+    <div class="modal fade" id="qrModal" tabindex="-1" role="dialog" aria-labelledby="qrModalLabel">
+      <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="qrModalLabel"><i class="fa fa-qrcode"></i> Compartir formulario</h4>
+          </div>
+          <div class="modal-body" style="text-align:center;">
+            <div id="qr-container" style="display:inline-block; padding:10px; background:#fff; border:1px solid #ddd; border-radius:4px; margin-bottom:12px;"></div>
+            <p class="text-muted" style="font-size:12px; margin:0 0 10px;">Escanea para abrir el formulario de encuesta</p>
+            <div class="input-group">
+              <input type="text" id="qr-url-text" class="form-control input-sm" readonly>
+              <span class="input-group-btn">
+                <button class="btn btn-default btn-sm" id="qr-copy-btn" type="button" title="Copiar enlace">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </span>
+            </div>
+            <button class="btn btn-primary btn-block" id="qr-download-btn" style="margin-top:10px;">
+              <i class="fa fa-download"></i> Descargar QR
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Vendor (Bootstrap 3 requiere jQuery) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- App -->
     <script src="js/models.js"></script>

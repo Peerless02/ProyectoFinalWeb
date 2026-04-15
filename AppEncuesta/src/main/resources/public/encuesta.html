@@ -270,8 +270,8 @@
         }
 
         function showLoginModal() {
-          if (window.$ && $('#authModal').modal) {
-            $('#authModal').modal('show');
+          if (window.jQuery) {
+            window.jQuery('#authModal').modal('show');
             return;
           }
           var modal = $('authModal');
@@ -279,8 +279,8 @@
         }
 
         function hideLoginModal() {
-          if (window.$ && $('#authModal').modal) {
-            $('#authModal').modal('hide');
+          if (window.jQuery) {
+            window.jQuery('#authModal').modal('hide');
             return;
           }
           var modal = $('authModal');

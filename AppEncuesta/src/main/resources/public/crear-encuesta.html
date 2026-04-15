@@ -199,10 +199,38 @@
       </div>
     </div>
 
+    <!-- Modal QR compartir encuesta -->
+    <div class="modal fade" id="qrModal" tabindex="-1" role="dialog" aria-labelledby="qrModalLabel">
+      <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="qrModalLabel"><i class="fa fa-qrcode"></i> Compartir formulario</h4>
+          </div>
+          <div class="modal-body" style="text-align:center;">
+            <div id="qr-container" style="display:inline-block; padding:10px; background:#fff; border:1px solid #ddd; border-radius:4px; margin-bottom:12px;"></div>
+            <p class="text-muted" style="font-size:12px; margin:0 0 10px;">Escanea para abrir el formulario de encuesta</p>
+            <div class="input-group">
+              <input type="text" id="qr-url-text" class="form-control input-sm" readonly>
+              <span class="input-group-btn">
+                <button class="btn btn-default btn-sm" id="qr-copy-btn" type="button" title="Copiar enlace">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </span>
+            </div>
+            <button class="btn btn-primary btn-block" id="qr-download-btn" style="margin-top:10px;">
+              <i class="fa fa-download"></i> Descargar QR
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Vendor (Bootstrap 3 requiere jQuery) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- App -->
     <script src="js/models.js"></script>
@@ -330,35 +358,41 @@
           return;
         }
 
+        // Ordenar por campo.orden
+        var sorted = campos.slice().sort(function(a, b) {
+          return (a.orden || 0) - (b.orden || 0);
+        });
+
         var html = '<div class="panel panel-default"><div class="panel-heading"><strong>Campos Adicionales</strong></div><div class="panel-body">';
 
-        campos.forEach(function(campo) {
-          var type = (campo.tipo || 'text').toLowerCase();
-          var fieldId = 'campo-' + (campo.id || campo.nombre);
-          var label = campo.nombre || 'Campo';
-          var required = campo.requerido ? ' required' : '';
+        sorted.forEach(function(campo) {
+          var tipo  = (campo.tipo || 'text').toLowerCase();
+          var cid   = campo.id || campo.nombre || '';
+          var fid   = 'extra-' + cid;
+          var label = campo.label || campo.nombre || 'Campo';
+          var req   = campo.requerido ? ' required' : '';
+          var reqMark = campo.requerido ? ' <span class="text-danger">*</span>' : '';
+          var attrs = ' id="' + fid + '" data-campo-id="' + cid + '" data-campo-tipo="' + tipo + '"';
 
-          if (type === 'text' || type === 'email' || type === 'number') {
-            html += '<div class="form-group">';
-            html += '<label for="' + fieldId + '">' + label + '</label>';
-            html += '<input type="' + type + '" class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '"' + required + '>';
-            html += '</div>';
-          } else if (type === 'textarea') {
-            html += '<div class="form-group">';
-            html += '<label for="' + fieldId + '">' + label + '</label>';
-            html += '<textarea class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '" rows="3"' + required + '></textarea>';
-            html += '</div>';
-          } else if (type === 'select') {
+          if (tipo === 'text' || tipo === 'email' || tipo === 'number') {
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<input type="' + tipo + '" class="form-control"' + attrs + req + '></div>';
+          } else if (tipo === 'textarea') {
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<textarea class="form-control" rows="3"' + attrs + req + '></textarea></div>';
+          } else if (tipo === 'select') {
             var opciones = campo.opciones || [];
-            html += '<div class="form-group">';
-            html += '<label for="' + fieldId + '">' + label + '</label>';
-            html += '<select class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '"' + required + '>';
-            html += '<option value="">Selecciona...</option>';
-            opciones.forEach(function(opt) {
-              html += '<option value="' + opt + '">' + opt + '</option>';
-            });
-            html += '</select>';
-            html += '</div>';
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<select class="form-control"' + attrs + req + '><option value="">Selecciona...</option>';
+            opciones.forEach(function(opt) { html += '<option value="' + opt + '">' + opt + '</option>'; });
+            html += '</select></div>';
+          } else if (tipo === 'date') {
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<input type="date" class="form-control"' + attrs + req + '></div>';
+          } else if (tipo === 'checkbox') {
+            html += '<div class="form-group"><div class="checkbox"><label>';
+            html += '<input type="checkbox"' + attrs + '> ' + label;
+            html += '</label></div></div>';
           }
         });
 

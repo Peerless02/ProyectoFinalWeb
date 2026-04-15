@@ -27,6 +27,7 @@ public class FormularioController {
         app.unsafe.routes.get("/api/formularios/usuario/{username}", this::listarPorUsuario);
         app.unsafe.routes.get("/api/formularios/mapa", this::listarMapa);
         app.unsafe.routes.delete("/api/formularios/usuario/{username}", this::eliminarPorUsuario);
+        app.unsafe.routes.get("/api/stats", this::stats);
     }
 
     private DecodedJWT validarToken(Context ctx) {
@@ -118,6 +119,12 @@ public class FormularioController {
 
         long eliminados = formularioService.eliminarPorUsuario(username);
         ctx.status(200).json(Map.of("mensaje", "Encuestas eliminadas", "eliminados", eliminados));
+    }
+
+    /** GET /api/stats — estadísticas agregadas (cualquier usuario autenticado). */
+    private void stats(Context ctx) {
+        if (validarToken(ctx) == null) return;
+        ctx.json(formularioService.getStats());
     }
 
     /** DELETE /api/formularios/{id} — elimina una encuesta del usuario autenticado. */

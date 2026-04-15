@@ -251,8 +251,8 @@
         function setAuth(token) { localStorage.setItem(LS_AUTH, JSON.stringify({ token: token })); }
         function clearAuth() { localStorage.removeItem(LS_AUTH); localStorage.removeItem('token'); }
 
-        function showLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('show'); } }
-        function hideLoginModal() { if (window.$ && $('#authModal').modal) { $('#authModal').modal('hide'); } }
+        function showLoginModal() { if (window.jQuery) { window.jQuery('#authModal').modal('show'); } }
+        function hideLoginModal() { if (window.jQuery) { window.jQuery('#authModal').modal('hide'); } }
 
         function setLoginError(msg) {
           setText($('auth-error'), msg || '');
