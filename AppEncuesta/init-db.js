@@ -17,7 +17,7 @@ const existingCollections = db.getCollectionNames();
 
 // -----------------------------------------------------------------------------
 // COLECCION: usuarios
-// Campos: username (unico), password (BCrypt), nombre, rol
+// Campos: username (unico), password (BCrypt), nombre, rol, bloqueado
 // Roles posibles: ADMIN, ENCUESTADOR
 // -----------------------------------------------------------------------------
 if (!existingCollections.includes("usuarios")) {
@@ -43,6 +43,10 @@ db.createCollection("usuarios", {
                     bsonType: "string",
                     enum: ["ADMIN", "ENCUESTADOR"],
                     description: "Rol del usuario — requerido"
+                },
+                bloqueado: {
+                    bsonType: "bool",
+                    description: "Si el usuario esta bloqueado"
                 }
             }
         }
@@ -59,7 +63,7 @@ print("Indice unico sobre 'username' verificado.");
 // -----------------------------------------------------------------------------
 // COLECCION: formularios
 // Campos: nombre, sector, nivelEscolar, usuarioRegistro, latitud, longitud,
-//         fotoBase64, fechaRegistro
+//         fotoBase64, fechaRegistro, localId, camposExtra
 // -----------------------------------------------------------------------------
 if (!existingCollections.includes("formularios")) {
 db.createCollection("formularios", {
@@ -100,6 +104,14 @@ db.createCollection("formularios", {
                 fechaRegistro: {
                     bsonType: "date",
                     description: "Fecha y hora del registro — requerido"
+                },
+                localId: {
+                    bsonType: ["string", "null"],
+                    description: "ID local del cliente para deduplicacion en sincronizacion"
+                },
+                camposExtra: {
+                    bsonType: ["object", "null"],
+                    description: "Campos adicionales definidos por la plantilla activa"
                 }
             }
         }
@@ -126,6 +138,11 @@ db.formularios.createIndex(
     { usuarioRegistro: 1, fechaRegistro: -1 },
     { name: "idx_formulario_usuario_fecha" }
 );
+// Indice para deduplicacion en sincronizacion offline
+db.formularios.createIndex(
+    { localId: 1, usuarioRegistro: 1 },
+    { name: "idx_formulario_localid_dedup" }
+);
 print("Indices de 'formularios' creados.");
 
 // -----------------------------------------------------------------------------
@@ -145,13 +162,15 @@ const usuariosSeed = [
         username: "admin",
         password: adminHash,
         nombre: "Administrador",
-        rol: "ADMIN"
+        rol: "ADMIN",
+        bloqueado: false
     },
     {
         username: "encuestador1",
         password: adminHash,
         nombre: "Encuestador Ejemplo",
-        rol: "ENCUESTADOR"
+        rol: "ENCUESTADOR",
+        bloqueado: false
     }
 ];
 
