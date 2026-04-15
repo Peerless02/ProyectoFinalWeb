@@ -117,6 +117,8 @@ ProyectoFinalWeb/
 | **Sincronización** | WebSocket + Web Workers + localStorage |
 | **Mapa** | Leaflet.js |
 | **Cámara** | Webcam-easy (captura en Base64) |
+| **Estadísticas** | Chart.js (panel de análisis en index.html) |
+| **QR** | QRCode.js (compartir enlace de formulario) |
 | **Seguridad** | JWT (java-jwt 4.4) + BCrypt (jBCrypt) |
 | **API REST** | Endpoints JSON + JWT Bearer auth |
 | **gRPC** | Protocol Buffers 3 + gRPC Java 1.64 |
@@ -249,13 +251,30 @@ mapa.html → GET /api/formularios/mapa → Devuelve encuestas con coordenadas
 ### 6. Gestión de Usuarios (solo ADMIN)
 
 ```
-usuarios.html → GET /api/usuarios → Lista de usuarios
+usuarios.html → GET /api/admin/users → Lista de usuarios
 → Crear nuevo usuario (nombre, username, password, rol)
 → Cambiar rol (ADMIN ↔ ENCUESTADOR)
 → Bloquear/desbloquear usuarios
 ```
 
-### 7. Gestión de Plantillas (solo ADMIN)
+### 7. Panel de Análisis
+
+```
+index.html → GET /api/stats → Devuelve totales agregados
+→ Chart.js renderiza gráfico de encuestas por sector
+→ Tarjetas con: total de encuestas, sectores únicos, encuestas últimos 30 días
+```
+
+### 8. Compartir por QR
+
+```
+Listado de encuestas → Botón "Compartir QR" en cada encuesta
+→ Modal con código QR generado por QRCode.js
+→ URL de la encuesta codificada en el QR
+→ Opción para copiar enlace o descargar imagen del QR
+```
+
+### 9. Gestión de Plantillas (solo ADMIN)
 
 ```
 admin-plantillas.html → Lista de plantillas con campos extra
@@ -282,16 +301,19 @@ Todos los endpoints (excepto login) requieren header `Authorization: Bearer <JWT
 | `POST` | `/api/formularios` | Crear formulario. Body: `{nombre, sector, nivelEscolar, fotoBase64, latitud, longitud}` |
 | `GET` | `/api/formularios/usuario/{username}` | Listar formularios de un usuario |
 | `PUT` | `/api/formularios/{id}` | Actualizar formulario |
+| `DELETE` | `/api/formularios/{id}` | Eliminar formulario por ID |
+| `DELETE` | `/api/formularios/usuario/{username}` | Eliminar todos los formularios de un usuario |
 | `GET` | `/api/formularios/mapa` | Listar formularios con coordenadas (para el mapa) |
+| `GET` | `/api/stats` | Estadísticas agregadas (total, sectores únicos, últimos 30 días) |
 
 ### Usuarios
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `GET` | `/api/usuarios` | Listar todos (solo ADMIN) |
-| `POST` | `/api/usuarios` | Crear usuario |
-| `PUT` | `/api/usuarios/{id}/rol` | Cambiar rol |
-| `PUT` | `/api/usuarios/{id}/bloqueado` | Bloquear/desbloquear |
+| `GET` | `/api/admin/users` | Listar todos (solo ADMIN) |
+| `POST` | `/api/admin/users` | Crear usuario |
+| `POST` | `/api/admin/users/{id}/role` | Cambiar rol |
+| `POST` | `/api/admin/users/{id}/blocked` | Bloquear/desbloquear |
 | `GET` | `/api/session` | Obtener sesión actual del token |
 
 ### Plantillas
