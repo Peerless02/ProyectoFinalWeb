@@ -229,6 +229,7 @@
         var delBtn = !f.sincronizado
           ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
           : '';
+        var qrBtn = '<button type="button" class="btn btn-xs btn-default mu-form-qr" title="Compartir QR"><i class="fa fa-qrcode"></i></button>';
 
         out += '<tr'
           + ' data-id="'     + escapeHtml(String(f.id || '')) + '"'
@@ -246,7 +247,7 @@
           + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
           + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
           + '<td style="white-space:nowrap;">'
-          + (syncOneBtn ? (syncOneBtn + ' ') : '') + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '')
+          + (syncOneBtn ? (syncOneBtn + ' ') : '') + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '') + ' ' + qrBtn
           + '</td>'
           + '</tr>';
       }
@@ -685,6 +686,9 @@
       show(ok, true);
       setTimeout(function () { show(ok, false); }, 2500);
 
+      // Mostrar QR para compartir el formulario
+      showQR(window.location.origin + '/crear-encuesta.html');
+
       form.reset();
       if (photoPreview) show(photoPreview, false);
       if (photoBase64) photoBase64.value = '';
@@ -760,6 +764,12 @@
               alert('Error en la sincronizacion: ' + msg);
             }
           });
+          return;
+        }
+
+        // QR para compartir formulario
+        if (t.classList.contains('mu-form-qr') || (t.closest && t.closest('.mu-form-qr'))) {
+          showQR(window.location.origin + '/crear-encuesta.html');
           return;
         }
 
@@ -1419,6 +1429,54 @@
         var iframe = $('map-iframe');
         if (iframe) iframe.src = 'about:blank';
       });
+    }
+  }
+
+  // --- QR Code ---
+  function showQR(url) {
+    var container = document.getElementById('qr-container');
+    var urlInput  = document.getElementById('qr-url-text');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(container, { text: url, width: 180, height: 180 });
+    } else {
+      container.innerHTML = '<p class="text-muted">Libreria QR no cargada.</p>';
+    }
+    if (urlInput) urlInput.value = url;
+
+    var copyBtn = document.getElementById('qr-copy-btn');
+    if (copyBtn) {
+      copyBtn.onclick = function () {
+        var self = this;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).catch(function () {
+            if (urlInput) { urlInput.select(); document.execCommand('copy'); }
+          });
+        } else if (urlInput) {
+          urlInput.select();
+          document.execCommand('copy');
+        }
+        self.innerHTML = '<i class="fa fa-check"></i>';
+        setTimeout(function () { self.innerHTML = '<i class="fa fa-copy"></i>'; }, 1500);
+      };
+    }
+
+    var dlBtn = document.getElementById('qr-download-btn');
+    if (dlBtn) {
+      dlBtn.onclick = function () {
+        var canvas = container.querySelector('canvas');
+        if (!canvas) return;
+        var a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = 'encuesta-qr.png';
+        a.click();
+      };
+    }
+
+    if (window.jQuery && window.jQuery.fn.modal) {
+      window.jQuery('#qrModal').modal('show');
     }
   }
 
