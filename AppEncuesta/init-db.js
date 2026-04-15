@@ -6,15 +6,21 @@
 //   mongosh "mongodb+srv://usuario:password@cluster0.xxx.mongodb.net/encuestadb" init-db.js
 // =============================================================================
 
-const db = db.getSiblingDB("encuestadb");
+// En mongosh/mongo shell, `db` ya existe como variable global.
+// No la redeclares con `const db = ...` porque produce error por shadowing (TDZ).
+db = db.getSiblingDB("encuestadb");
 
 print("=== Iniciando configuracion de encuestadb ===\n");
+
+// Hacer el script idempotente: si se corre otra vez, no debe fallar por colecciones ya creadas.
+const existingCollections = db.getCollectionNames();
 
 // -----------------------------------------------------------------------------
 // COLECCION: usuarios
 // Campos: username (unico), password (BCrypt), nombre, rol
 // Roles posibles: ADMIN, ENCUESTADOR
 // -----------------------------------------------------------------------------
+if (!existingCollections.includes("usuarios")) {
 db.createCollection("usuarios", {
     validator: {
         $jsonSchema: {
@@ -43,15 +49,19 @@ db.createCollection("usuarios", {
     }
 });
 print("Coleccion 'usuarios' creada.");
+} else {
+print("Coleccion 'usuarios' ya existe, omitida.");
+}
 
 db.usuarios.createIndex({ username: 1 }, { unique: true, name: "idx_username_unique" });
-print("Indice unico sobre 'username' creado.");
+print("Indice unico sobre 'username' verificado.");
 
 // -----------------------------------------------------------------------------
 // COLECCION: formularios
 // Campos: nombre, sector, nivelEscolar, usuarioRegistro, latitud, longitud,
 //         fotoBase64, fechaRegistro
 // -----------------------------------------------------------------------------
+if (!existingCollections.includes("formularios")) {
 db.createCollection("formularios", {
     validator: {
         $jsonSchema: {
@@ -96,6 +106,9 @@ db.createCollection("formularios", {
     }
 });
 print("Coleccion 'formularios' creada.");
+} else {
+print("Coleccion 'formularios' ya existe, omitida.");
+}
 
 db.formularios.createIndex(
     { usuarioRegistro: 1 },
