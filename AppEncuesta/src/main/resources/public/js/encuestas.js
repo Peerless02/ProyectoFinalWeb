@@ -221,6 +221,10 @@
           ? '<button type="button" class="btn btn-xs btn-info mu-form-map"><i class="fa fa-map-marker"></i> Visualizar en el mapa</button>'
           : '<button type="button" class="btn btn-xs btn-info mu-form-map" disabled title="Sin coordenadas GPS"><i class="fa fa-map-marker"></i> Visualizar en el mapa</button>';
 
+        var syncOneBtn = !f.sincronizado
+          ? '<button type="button" class="btn btn-xs btn-success mu-form-sync-one"><i class="fa fa-cloud-upload"></i> Sincronizar</button>'
+          : '';
+
         var editBtn = '<button type="button" class="btn btn-xs btn-warning mu-form-edit">Editar</button>';
         var delBtn = !f.sincronizado
           ? '<button type="button" class="btn btn-xs btn-danger mu-form-del">Eliminar</button>'
@@ -242,7 +246,7 @@
           + '<td style="white-space:nowrap;">' + escapeHtml((f.latitud != null ? String(f.latitud) : '') + (f.longitud != null ? (', ' + String(f.longitud)) : '')) + '</td>'
           + '<td style="white-space:nowrap;" style="text-align:center;">' + estadoBadge + '</td>'
           + '<td style="white-space:nowrap;">'
-          + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '')
+          + (syncOneBtn ? (syncOneBtn + ' ') : '') + mapBtn + ' ' + editBtn + (delBtn ? (' ' + delBtn) : '')
           + '</td>'
           + '</tr>';
       }
@@ -695,8 +699,73 @@
     if (tbody) {
       tbody.addEventListener('click', function (e) {
         var t = e.target;
-        if (!t || !t.classList || !t.classList.contains('mu-form-del')) return;
-        
+        if (!t || !t.classList) return;
+
+        // Sincronizar una sola encuesta pendiente
+        if (t.classList.contains('mu-form-sync-one')) {
+          var trS = t.closest('tr');
+          var idS = trS ? trS.getAttribute('data-id') : null;
+          var syncedS = trS ? trS.getAttribute('data-synced') : 'false';
+          if (!idS || syncedS === 'true') return;
+
+          var authS = getAuth();
+          if (!authS) {
+            showLoginModal();
+            return;
+          }
+
+          // Buscar la encuesta local por ID y sincronizarla
+          var allS = readFormularios();
+          var mineS = allS.filter(function (f) {
+            return String(f.usuarioRegistro || '').toLowerCase() === String(authS.username).toLowerCase();
+          });
+          var target = null;
+          for (var ii = 0; ii < mineS.length; ii++) {
+            if (String(mineS[ii].id) === String(idS)) { target = mineS[ii]; break; }
+          }
+          if (!target) {
+            alert('No se encontro la encuesta local para sincronizar.');
+            return;
+          }
+          if (target.sincronizado) return;
+          if (!navigator.onLine) {
+            alert('No hay conexion a internet para sincronizar.');
+            return;
+          }
+
+          t.disabled = true;
+          t.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sincronizando...';
+
+          initiateSyncViaWebSocket(authS.token, [target], function (success, result) {
+            // Restaurar boton (si la fila sigue en el DOM)
+            t.disabled = false;
+            t.innerHTML = '<i class="fa fa-cloud-upload"></i> Sincronizar';
+
+            if (success) {
+              var savedIds = (result && Array.isArray(result.idsGuardados)) ? result.idsGuardados : [];
+              var savedSet = {};
+              for (var i1 = 0; i1 < savedIds.length; i1++) savedSet[String(savedIds[i1])] = true;
+
+              // Marcar como sincronizado el/los IDs confirmados
+              var all2 = readFormularios();
+              for (var j1 = 0; j1 < all2.length; j1++) {
+                if (savedSet[String(all2[j1].id)]) all2[j1].sincronizado = true;
+              }
+              writeFormularios(all2);
+              renderList();
+              renderSyncBadge();
+            } else {
+              var msg = typeof result === 'string' ? result
+                : (result && result.errores ? result.errores + ' error(es) al sincronizar.' : 'Error desconocido');
+              alert('Error en la sincronizacion: ' + msg);
+            }
+          });
+          return;
+        }
+
+        // Eliminar una pendiente (local)
+        if (!t.classList.contains('mu-form-del')) return;
+         
         var tr = t.closest('tr');
         var id = tr ? tr.getAttribute('data-id') : null;
         var synced = tr ? tr.getAttribute('data-synced') : 'false';
@@ -1379,10 +1448,46 @@
     renderList();
     renderSyncBadge();
 
-    // Sincronizar al recuperar conexion
-    window.addEventListener('online', triggerSync);
+    function getPendingForUser(auth) {
+      var all = readFormularios();
+      return all.filter(function (f) {
+        return String(f.usuarioRegistro || '').toLowerCase() === String(auth.username).toLowerCase()
+          && f.sincronizado === false;
+      });
+    }
 
-    // Intentar sync inicial si ya hay conexion
-    triggerSync();
+    var _lastSyncPromptAt = 0;
+    function maybePromptSyncPending(reason) {
+      if (!navigator.onLine) return;
+      var auth = getAuth();
+      if (!auth) return;
+
+      var pending = getPendingForUser(auth);
+      if (!pending || pending.length === 0) return;
+
+      // Evitar prompts duplicados (por multiples eventos) en un intervalo corto
+      var now = Date.now();
+      if (now - _lastSyncPromptAt < 1500) return;
+      _lastSyncPromptAt = now;
+
+      var msg = 'Hay ' + pending.length + ' encuesta(s) pendiente(s) para subir al servidor.'
+        + (reason ? ('\\n(' + reason + ')') : '')
+        + '\\n\\nQuieres sincronizarlas ahora?';
+      if (confirm(msg)) {
+        triggerSync();
+      } else {
+        // No auto-sincronizar: el usuario puede usar el boton global o el de cada fila.
+        renderList();
+        renderSyncBadge();
+      }
+    }
+
+    // Al recuperar conexion, preguntar antes de sincronizar.
+    window.addEventListener('online', function () {
+      maybePromptSyncPending('Conexion recuperada');
+    });
+
+    // Si el usuario abre/recarga la pagina ya estando online y tiene pendientes, preguntar tambien.
+    maybePromptSyncPending('Sesion en linea');
   });
 })();
