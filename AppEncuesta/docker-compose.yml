@@ -25,10 +25,10 @@ services:
     restart: unless-stopped
     ports:
       - "${PUERTO:-7000}:${PUERTO:-7000}"
-      - "${GRPC_PORT:-9090}:${GRPC_PORT:-9090}"
+      - "${GRPC_PORT:-50051}:${GRPC_PORT:-50051}"
     environment:
       - PUERTO=${PUERTO:-7000}
-      - GRPC_PORT=${GRPC_PORT:-9090}
+      - GRPC_PORT=${GRPC_PORT:-50051}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-cambiar}
       - MONGO_URL=${MONGO_URL:-mongodb://mongo:27017}
       - MONGO_DB_NAME=${MONGO_DB_NAME:-encuestadb}

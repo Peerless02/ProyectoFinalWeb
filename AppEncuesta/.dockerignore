@@ -6,9 +6,11 @@
 **/build
 **/.gradle
 
+!/build/libs/
+!/build/libs/*.jar
+
 /.env*
 /credencial.env
 
 *.iml
 *.log
-

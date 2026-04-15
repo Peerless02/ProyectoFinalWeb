@@ -4,6 +4,12 @@ plugins {
     id 'com.google.protobuf' version '0.9.4'
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 application {
     mainClass = "org.CSTI5488.edu.Main"
 }
@@ -83,4 +89,18 @@ run {
 
 test {
     useJUnitPlatform()
+}
+
+// Empaquetar un "fat jar" ejecutable para uso directo con `java -jar` (Docker).
+// Esto evita depender de `installDist`/classpath externo dentro del contenedor.
+jar {
+    manifest {
+        attributes(
+            'Main-Class': application.mainClass.get()
+        )
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
