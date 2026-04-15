@@ -8,6 +8,12 @@ plugins {
 group   = 'org.csti5488.cliente'
 version = '1.0-SNAPSHOT'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 application {
     mainClass = 'org.csti5488.cliente.MainApp'
 }
