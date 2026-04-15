@@ -103,7 +103,7 @@
   function makeFormulario(data) {
     // Prefer usar la clase Formulario si existe (models.js), para reflejar el backend.
     if (typeof Formulario === 'function') {
-      return new Formulario(
+      var f = new Formulario(
         data.id || null,
         data.nombre,
         data.sector,
@@ -113,6 +113,8 @@
         data.longitud,
         data.fotoBase64 || ''
       );
+      if (data.camposExtra) f.camposExtra = data.camposExtra;
+      return f;
     }
     return {
       id: data.id || uuidFallback(),
@@ -123,9 +125,32 @@
       latitud: data.latitud,
       longitud: data.longitud,
       fotoBase64: data.fotoBase64 || '',
+      camposExtra: data.camposExtra || null,
       fechaRegistro: new Date().toISOString(),
       sincronizado: false
     };
+  }
+
+  function readCamposExtraValues() {
+    var container = document.getElementById('campos-extra');
+    if (!container) return null;
+    var inputs = container.querySelectorAll('[data-campo-id]');
+    if (!inputs.length) return null;
+    var result = {};
+    inputs.forEach(function (el) {
+      var id   = el.getAttribute('data-campo-id');
+      var tipo = el.getAttribute('data-campo-tipo') || 'text';
+      var val;
+      if (tipo === 'checkbox') {
+        val = el.checked;
+      } else if (tipo === 'number') {
+        val = el.value !== '' ? Number(el.value) : null;
+      } else {
+        val = el.value !== '' ? el.value : null;
+      }
+      if (id) result[id] = val;
+    });
+    return Object.keys(result).length > 0 ? result : null;
   }
 
   function renderAuth() {
@@ -675,7 +700,8 @@
         usuarioRegistro: auth.username,
         latitud: latNum,
         longitud: lngNum,
-        fotoBase64: foto
+        fotoBase64: foto,
+        camposExtra: readCamposExtraValues()
       });
 
       var list = readFormularios();

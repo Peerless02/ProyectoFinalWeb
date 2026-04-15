@@ -358,35 +358,41 @@
           return;
         }
 
+        // Ordenar por campo.orden
+        var sorted = campos.slice().sort(function(a, b) {
+          return (a.orden || 0) - (b.orden || 0);
+        });
+
         var html = '<div class="panel panel-default"><div class="panel-heading"><strong>Campos Adicionales</strong></div><div class="panel-body">';
 
-        campos.forEach(function(campo) {
-          var type = (campo.tipo || 'text').toLowerCase();
-          var fieldId = 'campo-' + (campo.id || campo.nombre);
-          var label = campo.nombre || 'Campo';
-          var required = campo.requerido ? ' required' : '';
+        sorted.forEach(function(campo) {
+          var tipo  = (campo.tipo || 'text').toLowerCase();
+          var cid   = campo.id || campo.nombre || '';
+          var fid   = 'extra-' + cid;
+          var label = campo.label || campo.nombre || 'Campo';
+          var req   = campo.requerido ? ' required' : '';
+          var reqMark = campo.requerido ? ' <span class="text-danger">*</span>' : '';
+          var attrs = ' id="' + fid + '" data-campo-id="' + cid + '" data-campo-tipo="' + tipo + '"';
 
-          if (type === 'text' || type === 'email' || type === 'number') {
-            html += '<div class="form-group">';
-            html += '<label for="' + fieldId + '">' + label + '</label>';
-            html += '<input type="' + type + '" class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '"' + required + '>';
-            html += '</div>';
-          } else if (type === 'textarea') {
-            html += '<div class="form-group">';
-            html += '<label for="' + fieldId + '">' + label + '</label>';
-            html += '<textarea class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '" rows="3"' + required + '></textarea>';
-            html += '</div>';
-          } else if (type === 'select') {
+          if (tipo === 'text' || tipo === 'email' || tipo === 'number') {
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<input type="' + tipo + '" class="form-control"' + attrs + req + '></div>';
+          } else if (tipo === 'textarea') {
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<textarea class="form-control" rows="3"' + attrs + req + '></textarea></div>';
+          } else if (tipo === 'select') {
             var opciones = campo.opciones || [];
-            html += '<div class="form-group">';
-            html += '<label for="' + fieldId + '">' + label + '</label>';
-            html += '<select class="form-control campo-extra" id="' + fieldId + '" data-id="' + (campo.id || campo.nombre) + '"' + required + '>';
-            html += '<option value="">Selecciona...</option>';
-            opciones.forEach(function(opt) {
-              html += '<option value="' + opt + '">' + opt + '</option>';
-            });
-            html += '</select>';
-            html += '</div>';
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<select class="form-control"' + attrs + req + '><option value="">Selecciona...</option>';
+            opciones.forEach(function(opt) { html += '<option value="' + opt + '">' + opt + '</option>'; });
+            html += '</select></div>';
+          } else if (tipo === 'date') {
+            html += '<div class="form-group"><label for="' + fid + '">' + label + reqMark + '</label>';
+            html += '<input type="date" class="form-control"' + attrs + req + '></div>';
+          } else if (tipo === 'checkbox') {
+            html += '<div class="form-group"><div class="checkbox"><label>';
+            html += '<input type="checkbox"' + attrs + '> ' + label;
+            html += '</label></div></div>';
           }
         });
 
